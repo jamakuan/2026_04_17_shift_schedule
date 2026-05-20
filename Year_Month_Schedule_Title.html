@@ -39,13 +39,26 @@ CTYPE html>
 				        display: flex;
 					      align-items: center;
 					            gap: 10px;
-						          font-weight: bold;
-							      }
+							      font-weight: bold;
+						          }
 
-		        .toggle-row input {
+	        .toggle-row input {
 				      width: auto;
 				            margin: 0;
 					        }
+
+	    .toggle-row label {
+		          margin-top: 0;
+			        font-weight: bold;
+				      display: inline-flex;
+				      align-items: center;
+				        }
+
+	    .toggle-row .toggle-item {
+		          display: inline-flex;
+			        align-items: center;
+				      gap: 6px;
+				        }
 
 			    #scheduleTitle {
 				          margin-top: 28px;
@@ -155,15 +168,21 @@ CTYPE html>
 		  <div class="container">
 			      <h1>排班表標題產生器</h1>
 
-			          <label for="yearInput">年份</label>
+				          <label for="yearInput">年份</label>
 				      <input id="yearInput" type="number" placeholder="例如：2026" min="2026" />
 
 				          <label for="monthInput">月份</label>
 					      <input id="monthInput" type="number" placeholder="例如：5" min="1" max="12" />
 
 					          <div class="toggle-row">
+							        <span class="toggle-item">
 							        <input id="holidayToggle" type="checkbox" checked />
 								      <label for="holidayToggle">顯示國定假日橘色標記</label>
+								          </span>
+								          <span class="toggle-item">
+								        <input id="originalHolidayToggle" type="checkbox" />
+								      <label for="originalHolidayToggle">原始假日</label>
+								          </span>
 								          </div>
 
 									      <div id="scheduleTitle"></div>
@@ -185,9 +204,10 @@ CTYPE html>
 																										    </div>
 
 																										      <script>
-																											          const yearInput = document.getElementById("yearInput");
+																												      const yearInput = document.getElementById("yearInput");
 																												      const monthInput = document.getElementById("monthInput");
 																												      const holidayToggle = document.getElementById("holidayToggle");
+																												      const originalHolidayToggle = document.getElementById("originalHolidayToggle");
 																												      const scheduleTitle = document.getElementById("scheduleTitle");
 																												      const tableWrapper = document.getElementById("tableWrapper");
 																												      const scheduleTableBody = document.getElementById("scheduleTableBody");
@@ -278,6 +298,24 @@ CTYPE html>
 																													            return cell;
 																													          }
 
+																												      function getEmployeeCellDisplay(year, month, day) {
+																													            if (!originalHolidayToggle.checked) {
+																															            return "";
+																															          }
+
+																													            const weekday = new Date(year, month - 1, day).getDay();
+
+																													            if (weekday === 0) {
+																															            return "例";
+																															          }
+
+																													            if (weekday === 6 || isNationalHoliday(year, month, day)) {
+																															            return "休";
+																															          }
+
+																													            return "";
+																													          }
+
 																												      function createLeftDateTitleCell() {
 																													            const cell = document.createElement("td");
 																													            cell.classList.add("left-date-title");
@@ -303,7 +341,7 @@ CTYPE html>
 																													            return row;
 																													          }
 
-																												      function createEmployeeRow(employee, daysInMonth) {
+																												      function createEmployeeRow(employee, year, month, daysInMonth) {
 																													            const row = document.createElement("tr");
 
 																													            const employeeIdCell = document.createElement("td");
@@ -318,8 +356,21 @@ CTYPE html>
 																													            row.appendChild(employeeNameCell);
 
 																													            for (let day = 1; day <= daysInMonth; day++) {
+																															            const cellType = getCellType(year, month, day);
+																															            const holidayName = getHolidayName(year, month, day);
 																															            const scheduleCell = document.createElement("td");
 																															            scheduleCell.classList.add("schedule-input-cell");
+																															            scheduleCell.textContent = getEmployeeCellDisplay(year, month, day);
+
+																															            if (cellType === "nationalHoliday") {
+																																	              scheduleCell.classList.add("national-holiday");
+																																	              scheduleCell.title = holidayName;
+																																	            }
+
+																															            if (cellType === "weekend") {
+																																	              scheduleCell.classList.add("weekend");
+																																	            }
+
 																															            row.appendChild(scheduleCell);
 																															          }
 
@@ -386,7 +437,7 @@ CTYPE html>
 																													            scheduleTableBody.appendChild(weekdayRow);
 
 																													            employees.forEach((employee) => {
-																															            scheduleTableBody.appendChild(createEmployeeRow(employee, daysInMonth));
+																															            scheduleTableBody.appendChild(createEmployeeRow(employee, year, month, daysInMonth));
 																															          });
 
 																													            if (holidayToggle.checked && holidayNotes.length > 0) {
@@ -403,6 +454,7 @@ CTYPE html>
 																												      yearInput.addEventListener("input", updateScheduleTitle);
 																												      monthInput.addEventListener("input", updateScheduleTitle);
 																												      holidayToggle.addEventListener("change", updateScheduleTitle);
+																												      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
 																												    </script>
 	</body>
 </html>
