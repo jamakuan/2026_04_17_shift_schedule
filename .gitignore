@@ -1,0 +1,12 @@
+data/
+test/
+.uv-cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+*.log
+*.tmp
+*.bak
