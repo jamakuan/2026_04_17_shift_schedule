@@ -291,6 +291,24 @@
     </section>
 
     <section class="panel">
+      <h2 style="margin: 0 0 16px; font-size: 22px;">年度摘要</h2>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; min-width: 900px;">
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>假日上班天數</th>
+              <th>本月順序</th>
+              <th>值班天數</th>
+              <th>下月順序</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2 id="scheduleTitle" style="margin: 0 0 16px; font-size: 22px;">單月月曆</h2>
       <div id="tableWrapper" class="table-wrapper">
         <div id="tableScaleStage" class="table-scale-stage">
@@ -313,6 +331,7 @@
     const summaryCurrentOrder = document.getElementById("summaryCurrentOrder");
     const summaryDutyCounts = document.getElementById("summaryDutyCounts");
     const summaryNextOrder = document.getElementById("summaryNextOrder");
+    const summaryTableBody = document.getElementById("summaryTableBody");
     const scheduleTitle = document.getElementById("scheduleTitle");
     const tableWrapper = document.getElementById("tableWrapper");
     const tableScaleStage = document.getElementById("tableScaleStage");
@@ -578,6 +597,19 @@
       summaryNextOrder.innerHTML = record.nextOrder.join(" → ");
     }
 
+    function renderAnnualSummary() {
+      summaryTableBody.innerHTML = "";
+      state.yearData.forEach((record) => {
+        const row = document.createElement("tr");
+        row.appendChild(createCell(`${record.month} 月`));
+        row.appendChild(createCell(`${record.dutyDates.length} 天`));
+        row.appendChild(createCell(record.order.join(" → ")));
+        row.appendChild(createCell(record.order.map((name) => `${name} ${record.dutyCounts[name]} 天`).join("、")));
+        row.appendChild(createCell(record.nextOrder.join(" → ")));
+        summaryTableBody.appendChild(row);
+      });
+    }
+
     function renderHolidayFooter(record) {
       const holidayNotes = [];
       const daysInMonth = getDaysInMonth(state.currentYear, record.month);
@@ -626,6 +658,7 @@
 
       state.currentYear = year;
       state.yearData = generateYearData(year);
+      renderAnnualSummary();
       const record = getMonthRecord(month);
       if (!record) {
         return;
