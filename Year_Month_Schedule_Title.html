@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>排班表標題產生器</title>
+  <title>多用戶順序選填排班系統</title>
   <style>
     :root {
       color-scheme: light;
@@ -14,9 +14,12 @@
       --muted: #6b7280;
       --accent: #1d4ed8;
       --accent-soft: #dbeafe;
-      --weekend: #333333;
-      --holiday: #f59e0b;
-      --duty: #1d4ed8;
+      --success: #166534;
+      --success-bg: #dcfce7;
+      --warning: #92400e;
+      --warning-bg: #fef3c7;
+      --danger: #991b1b;
+      --danger-bg: #fee2e2;
     }
 
     * {
@@ -25,9 +28,12 @@
 
     body {
       margin: 0;
-      padding: 32px 20px 48px;
+      padding: 28px 18px 40px;
       font-family: Arial, "Microsoft JhengHei", sans-serif;
-      background: var(--bg);
+      background:
+        radial-gradient(circle at top left, #dbeafe 0%, transparent 25%),
+        radial-gradient(circle at bottom right, #e5e7eb 0%, transparent 20%),
+        var(--bg);
       color: var(--text);
     }
 
@@ -39,14 +45,14 @@
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
       padding: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
     }
 
-    h1 {
-      margin: 0 0 8px;
-      font-size: 30px;
+    h1, h2, h3 {
+      margin: 0 0 10px;
     }
 
     p {
@@ -55,106 +61,193 @@
       color: var(--muted);
     }
 
-    .control-grid,
-    .summary-grid {
+    .header {
+      display: grid;
+      gap: 12px;
+    }
+
+    .command {
+      margin-top: 8px;
+      display: inline-block;
+      font-family: monospace;
+      background: #111827;
+      color: #f9fafb;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+
+    .grid {
       display: grid;
       gap: 16px;
     }
 
-    .control-grid {
-      grid-template-columns: 180px 180px 1fr;
-      align-items: end;
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .summary-grid {
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin-top: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--text);
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .pill.done {
+      background: var(--success-bg);
+      color: var(--success);
+    }
+
+    .pill.pending {
+      background: var(--warning-bg);
+      color: var(--warning);
+    }
+
+    .pill.danger {
+      background: var(--danger-bg);
+      color: var(--danger);
     }
 
     .summary-card {
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 14px;
-      background: #ffffff;
-      min-height: 92px;
+      background: #fcfcfd;
+      min-height: 88px;
     }
 
-    .summary-label {
+    .summary-card small {
       display: block;
-      margin-bottom: 8px;
-      font-size: 13px;
       color: var(--muted);
+      margin-bottom: 8px;
     }
 
-    .summary-value {
-      line-height: 1.7;
+    .summary-card strong {
+      line-height: 1.6;
+      font-size: 18px;
+    }
+
+    .message {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      line-height: 1.6;
       font-weight: bold;
     }
 
-    label {
+    .message.info {
       display: block;
-      margin-bottom: 6px;
-      font-weight: bold;
+      background: var(--accent-soft);
+      color: var(--accent);
     }
 
-    input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #ffffff;
-      font: inherit;
+    .message.success {
+      display: block;
+      background: var(--success-bg);
+      color: var(--success);
     }
 
-    .toggle-group {
+    .message.error {
+      display: block;
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px 18px;
-      padding-bottom: 2px;
-    }
-
-    .toggle-item {
-      display: inline-flex;
-      align-items: center;
       gap: 8px;
-      font-weight: bold;
-      color: var(--text);
+      margin-bottom: 16px;
     }
 
-    .toggle-item input {
-      width: auto;
-      margin: 0;
-    }
-
-    .note-bar {
-      margin-top: 16px;
-      padding: 12px 14px;
-      border-radius: 6px;
-      background: #f9fafb;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .tab-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .tab-button {
+    .tab {
+      padding: 10px 14px;
+      border-radius: 999px;
       border: 1px solid var(--line);
-      background: var(--panel);
-      color: var(--text);
-      border-radius: 6px;
-      padding: 10px 16px;
-      cursor: pointer;
-      font: inherit;
-      font-weight: bold;
+      background: #ffffff;
     }
 
-    .tab-button.active {
-      border-color: var(--accent);
+    .tab.active {
       background: var(--accent-soft);
+      border-color: var(--accent);
       color: var(--accent);
     }
 
@@ -166,148 +259,112 @@
       display: block;
     }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-
-    .status-pill.auto {
-      color: var(--muted);
-      background: #e5e7eb;
-    }
-
-    .status-pill.manual {
-      color: #92400e;
-      background: #fef3c7;
-    }
-
-    .order-editor {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(110px, 1fr));
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-
-    .order-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .small-button {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #ffffff;
-      padding: 8px 10px;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .small-button.primary {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: #ffffff;
-    }
-
-    .table-wrapper {
-      margin-top: 16px;
-      overflow-x: hidden;
-      display: none;
-    }
-
-    .table-scale-stage {
-      width: 100%;
-      overflow: hidden;
+    .table-wrap {
+      overflow-x: auto;
     }
 
     table {
-      width: max-content;
-      min-width: 100%;
+      width: 100%;
       border-collapse: collapse;
-      table-layout: fixed;
-      transform-origin: left top;
+      min-width: 920px;
     }
 
+    th,
     td {
-      border: 1px solid #999;
-      text-align: center;
-      padding: 10px 4px;
-      font-size: 16px;
-      font-weight: bold;
-      background: #ffffff;
-      vertical-align: middle;
-      min-width: 36px;
-      height: 28px;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
     }
 
-    .left-date-title {
-      min-width: 142px;
-      background: #ffffff;
-      font-size: 16px;
-    }
-
-    .employee-id-header,
-    .employee-id {
-      min-width: 52px;
-      width: 52px;
-    }
-
-    .employee-name-header,
-    .employee-name {
-      min-width: 90px;
-      width: 90px;
-    }
-
-    .employee-id,
-    .employee-name {
-      font-weight: normal;
-    }
-
-    .holiday-footer,
-    .schedule-rules-footer {
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 6px;
-      line-height: 1.7;
-      display: none;
-    }
-
-    .holiday-footer {
-      border-left: 4px solid var(--holiday);
-      background: #fff7ed;
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .schedule-rules-footer {
-      border-left: 4px solid #666666;
-      background: #f8f8f8;
+    th {
+      color: var(--muted);
       font-size: 14px;
     }
 
-    td.weekend {
-      background: var(--weekend);
-      color: #ffffff;
+    .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
     }
 
-    td.national-holiday {
-      background: var(--holiday);
-      color: #111111;
+    .choice-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #ffffff;
+      font-size: 14px;
     }
 
-    td.duty-day {
-      background: var(--duty);
-      color: #ffffff;
+    .choice-chip input {
+      width: auto;
+      margin: 0;
+    }
+
+    .choice-chip.dim {
+      opacity: 0.45;
+    }
+
+    .list-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .list-card h3 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .schedule-board {
+      display: grid;
+      gap: 10px;
+    }
+
+    .schedule-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 1fr 140px;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .schedule-row .date-title {
+      font-weight: bold;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .code-box {
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 14px;
+      font-family: monospace;
+      line-height: 1.6;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     @media (max-width: 1100px) {
-      .control-grid,
-      .summary-grid {
+      .grid.two,
+      .grid.three,
+      .grid.four,
+      .schedule-row {
         grid-template-columns: 1fr;
       }
     }
@@ -315,598 +372,974 @@
 </head>
 <body>
   <div class="container">
+    <section class="panel header">
+      <div>
+        <h1>多用戶順序選填排班系統</h1>
+        <p>此頁面已從年度靜態排班工具改成共享式排班前端，可登入、建立月份、順序選填、開啟修改期、查看版本與 audit log。</p>
+      </div>
+      <div>
+        <p>先啟動後端，再直接打開這個 HTML 或用其他靜態伺服器開啟都可以：</p>
+        <span class="command">.venv/bin/python -m uvicorn app.main:app --reload</span>
+      </div>
+    </section>
+
+    <div id="message" class="message"></div>
+
     <section class="panel">
-      <h1>排班表標題產生器</h1>
-      <p>先建立年度假日值班分配邏輯，將每月假日上班天數轉成 4 人值班天數與下月順序。</p>
+      <div class="grid two">
+        <div class="field">
+          <label for="apiBaseInput">API Base URL</label>
+          <input id="apiBaseInput" value="http://127.0.0.1:8000" />
+        </div>
+        <div class="field">
+          <label for="employeeIdInput">登入員工編號</label>
+          <div class="actions">
+            <input id="employeeIdInput" placeholder="例如 2196" />
+            <button id="loginButton" class="primary" type="button">登入</button>
+            <button id="logoutButton" type="button">登出</button>
+          </div>
+          <div id="quickLoginRow" class="pill-row"></div>
+        </div>
+      </div>
+      <div id="currentUserBox" class="pill-row" style="margin-top: 14px;"></div>
     </section>
 
     <section class="panel">
-      <div class="control-grid">
-        <div>
+      <div class="grid four">
+        <div class="field">
           <label for="yearInput">年份</label>
-          <input id="yearInput" type="number" min="2026" placeholder="例如：2026" />
+          <input id="yearInput" type="number" min="2026" value="2026" />
         </div>
-        <div>
+        <div class="field">
           <label for="monthInput">月份</label>
-          <input id="monthInput" type="number" min="1" max="12" placeholder="例如：5" />
+          <input id="monthInput" type="number" min="1" max="12" value="5" />
         </div>
-        <div>
-          <label>顯示選項</label>
-          <div class="toggle-group">
-            <label class="toggle-item" for="holidayToggle">
-              <input id="holidayToggle" type="checkbox" checked />
-              顯示國定假日橘色標記
-            </label>
-            <label class="toggle-item" for="originalHolidayToggle">
-              <input id="originalHolidayToggle" type="checkbox" checked />
-              顯示原始假日與休假標記
-            </label>
+        <div class="field">
+          <label for="reviewDeadlineInput">修改截止時間</label>
+          <input id="reviewDeadlineInput" type="datetime-local" />
+        </div>
+        <div class="field">
+          <label>月份操作</label>
+          <div class="actions">
+            <button id="loadMonthButton" class="primary" type="button">載入月份</button>
+            <button id="startPickingButton" type="button">建立並開始選填</button>
+            <button id="openReviewButton" type="button">開啟修改期</button>
+            <button id="closeReviewButton" type="button">鎖定月份</button>
           </div>
         </div>
       </div>
-
-      <div class="note-bar">
-        首月固定順序：鍾靜怡 → 許芷嘉 → 黃柏瑜 → 彭盛寬。週日全員休假，王宏榮假日固定休息，不參與假日值班分配。週六與週一到週五的國定假日都需安排 1 人上班。國定假日橘色標記目前提供 2026 年資料。
-      </div>
-
-      <div class="summary-grid">
-        <div class="summary-card">
-          <span class="summary-label">本月假日上班天數</span>
-          <div id="summaryDutyDayCount" class="summary-value">-</div>
-        </div>
-        <div class="summary-card">
-          <span class="summary-label">本月排班順序</span>
-          <div id="summaryCurrentOrder" class="summary-value">-</div>
-        </div>
-        <div class="summary-card">
-          <span class="summary-label">本月假日上班次數</span>
-          <div id="summaryDutyCounts" class="summary-value">-</div>
-        </div>
-        <div class="summary-card">
-          <span class="summary-label">下個月順序</span>
-          <div id="summaryNextOrder" class="summary-value">-</div>
-        </div>
-      </div>
     </section>
 
-    <div class="tab-bar">
-      <button id="summaryTabButton" class="tab-button active" type="button">年度摘要</button>
-      <button id="detailTabButton" class="tab-button" type="button">單月月曆</button>
+    <section class="panel">
+      <div id="summaryGrid" class="grid four"></div>
+    </section>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="overview" type="button">總覽</button>
+      <button class="tab" data-tab="schedule" type="button">日期視圖</button>
+      <button class="tab" data-tab="versions" type="button">版本</button>
+      <button class="tab" data-tab="audit" type="button">Audit Log</button>
     </div>
 
-    <section id="summaryPanel" class="panel tab-panel active">
-      <h2 style="margin: 0 0 16px; font-size: 22px;">年度摘要</h2>
-      <p id="summaryMessage" style="margin-bottom: 16px;"></p>
-      <div style="overflow-x: auto;">
-        <table style="width: 100%; min-width: 900px;">
-          <thead>
-            <tr>
-              <th>月份</th>
-              <th>假日上班天數</th>
-              <th>本月順序</th>
-              <th>值班天數</th>
-              <th>下月順序</th>
-              <th>來源</th>
-              <th style="min-width: 520px;">管理員覆寫</th>
-            </tr>
-          </thead>
-          <tbody id="summaryTableBody"></tbody>
-        </table>
+    <section id="overviewTab" class="panel tab-panel active">
+      <div class="grid two">
+        <div class="list-card">
+          <h3>參與者與 quota</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>順序</th>
+                  <th>姓名</th>
+                  <th>值班 quota</th>
+                  <th>補休 quota</th>
+                  <th>完成</th>
+                  <th>目前排班</th>
+                </tr>
+              </thead>
+              <tbody id="participantTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="list-card">
+          <h3>目前可做的事</h3>
+          <div id="actionSummary" class="code-box">尚未載入月份。</div>
+        </div>
+      </div>
+
+      <div id="pickPanel" class="list-card hidden" style="margin-top: 16px;">
+        <h3>順序選填</h3>
+        <div class="grid two">
+          <div>
+            <div class="field">
+              <label for="pickTargetSelect">提交對象</label>
+              <select id="pickTargetSelect"></select>
+            </div>
+            <div id="pickQuotaNote" class="muted" style="margin-top: 10px;"></div>
+            <div class="field" style="margin-top: 12px;">
+              <label for="carryoverCountInput">跨月補休數</label>
+              <input id="carryoverCountInput" type="number" min="0" value="0" />
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>值班日期</label>
+              <div id="holidayPickChoices" class="chip-list"></div>
+            </div>
+            <div class="field" style="margin-top: 12px;">
+              <label>補休日</label>
+              <div id="compPickChoices" class="chip-list"></div>
+            </div>
+          </div>
+        </div>
+        <div class="actions" style="margin-top: 16px;">
+          <button id="submitPickButton" class="primary" type="button">送出本輪選填</button>
+        </div>
+      </div>
+
+      <div id="editorPanel" class="list-card hidden" style="margin-top: 16px;">
+        <h3>整月編輯</h3>
+        <div class="grid two">
+          <div>
+            <h3 style="font-size: 15px;">跨月待處理來源值班日</h3>
+            <div id="carryoverEditor" class="grid two"></div>
+          </div>
+          <div>
+            <div class="field">
+              <label for="overrideModeCheckbox">管理者覆寫模式</label>
+              <label class="choice-chip">
+                <input id="overrideModeCheckbox" type="checkbox" />
+                允許突破 quota 限制並留下明確紀錄
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap" style="margin-top: 16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>類型</th>
+                <th>值班指派</th>
+                <th>補休安排</th>
+                <th>容量</th>
+              </tr>
+            </thead>
+            <tbody id="editorTableBody"></tbody>
+          </table>
+        </div>
+        <div class="actions" style="margin-top: 16px;">
+          <button id="saveAssignmentsButton" class="primary" type="button">儲存整月版本</button>
+        </div>
       </div>
     </section>
 
-    <section id="detailPanel" class="panel tab-panel">
-      <h2 id="scheduleTitle" style="margin: 0 0 16px; font-size: 22px;">單月月曆</h2>
-      <div id="tableWrapper" class="table-wrapper">
-        <div id="tableScaleStage" class="table-scale-stage">
-          <table id="scheduleTable">
-            <tbody id="scheduleTableBody"></tbody>
-          </table>
+    <section id="scheduleTab" class="panel tab-panel">
+      <div id="scheduleBoard" class="schedule-board"></div>
+    </section>
+
+    <section id="versionsTab" class="panel tab-panel">
+      <div class="actions" style="margin-bottom: 14px;">
+        <button id="refreshVersionsButton" class="primary" type="button">載入版本列表</button>
+      </div>
+      <div class="grid two">
+        <div class="list-card">
+          <h3>版本列表</h3>
+          <div id="versionList" class="code-box">尚未載入版本。</div>
+        </div>
+        <div class="list-card">
+          <h3>版本內容</h3>
+          <div id="versionDetail" class="code-box">請先從左側選擇版本。</div>
         </div>
       </div>
-      <div id="holidayFooter" class="holiday-footer"></div>
-      <div id="scheduleRulesFooter" class="schedule-rules-footer"></div>
+      <div class="grid three" style="margin-top: 16px;">
+        <div class="field">
+          <label for="diffFromSelect">比較起點</label>
+          <select id="diffFromSelect"></select>
+        </div>
+        <div class="field">
+          <label for="diffToSelect">比較終點</label>
+          <select id="diffToSelect"></select>
+        </div>
+        <div class="field">
+          <label>版本差異</label>
+          <button id="loadDiffButton" type="button">載入差異</button>
+        </div>
+      </div>
+      <div id="diffDetail" class="code-box" style="margin-top: 16px;">尚未載入差異。</div>
+    </section>
+
+    <section id="auditTab" class="panel tab-panel">
+      <div class="actions" style="margin-bottom: 14px;">
+        <button id="refreshAuditButton" class="primary" type="button">載入 Audit Log</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th>動作</th>
+              <th>執行者</th>
+              <th>月份</th>
+              <th>摘要</th>
+            </tr>
+          </thead>
+          <tbody id="auditTableBody"></tbody>
+        </table>
+      </div>
     </section>
   </div>
 
   <script>
-    const yearInput = document.getElementById("yearInput");
-    const monthInput = document.getElementById("monthInput");
-    const holidayToggle = document.getElementById("holidayToggle");
-    const originalHolidayToggle = document.getElementById("originalHolidayToggle");
-    const summaryDutyDayCount = document.getElementById("summaryDutyDayCount");
-    const summaryCurrentOrder = document.getElementById("summaryCurrentOrder");
-    const summaryDutyCounts = document.getElementById("summaryDutyCounts");
-    const summaryNextOrder = document.getElementById("summaryNextOrder");
-    const summaryTableBody = document.getElementById("summaryTableBody");
-    const summaryMessage = document.getElementById("summaryMessage");
-    const summaryTabButton = document.getElementById("summaryTabButton");
-    const detailTabButton = document.getElementById("detailTabButton");
-    const summaryPanel = document.getElementById("summaryPanel");
-    const detailPanel = document.getElementById("detailPanel");
-    const scheduleTitle = document.getElementById("scheduleTitle");
-    const tableWrapper = document.getElementById("tableWrapper");
-    const tableScaleStage = document.getElementById("tableScaleStage");
-    const scheduleTable = document.getElementById("scheduleTable");
-    const scheduleTableBody = document.getElementById("scheduleTableBody");
-    const holidayFooter = document.getElementById("holidayFooter");
-    const scheduleRulesFooter = document.getElementById("scheduleRulesFooter");
-
-    const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
-    const employees = [
-      { id: "2191", name: "王宏榮", holidayFixedOff: true },
-      { id: "2196", name: "鍾靜怡", holidayFixedOff: false },
-      { id: "2138", name: "許芷嘉", holidayFixedOff: false },
-      { id: "2318", name: "黃柏瑜", holidayFixedOff: false },
-      { id: "2442", name: "彭盛寬", holidayFixedOff: false }
+    const DEFAULT_USERS = [
+      { employeeId: "2196", name: "鍾靜怡", role: "admin" },
+      { employeeId: "2138", name: "許芷嘉", role: "employee" },
+      { employeeId: "2318", name: "黃柏瑜", role: "employee" },
+      { employeeId: "2442", name: "彭盛寬", role: "employee" },
+      { employeeId: "2191", name: "王宏榮", role: "employee" }
     ];
-    const dutyEmployeeNames = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
-    const initialDutyOrder = [...dutyEmployeeNames];
-
-    const nationalHolidays = {
-      "2026-01-01": "開國紀念日",
-      "2026-02-15": "小年夜",
-      "2026-02-16": "農曆除夕",
-      "2026-02-17": "春節",
-      "2026-02-18": "春節",
-      "2026-02-19": "春節",
-      "2026-02-20": "補假",
-      "2026-02-27": "補假",
-      "2026-02-28": "和平紀念日",
-      "2026-04-03": "補假",
-      "2026-04-04": "兒童節",
-      "2026-04-05": "清明節",
-      "2026-04-06": "補假",
-      "2026-05-01": "勞動節",
-      "2026-06-19": "端午節",
-      "2026-09-25": "中秋節",
-      "2026-09-28": "孔子誕辰紀念日 / 教師節",
-      "2026-10-09": "補假",
-      "2026-10-10": "國慶日",
-      "2026-10-25": "臺灣光復暨金門古寧頭大捷紀念日",
-      "2026-10-26": "補假",
-      "2026-12-25": "行憲紀念日"
-    };
 
     const state = {
-      currentYear: null,
-      yearData: [],
-      activeTab: "summary",
-      manualOverrides: {}
+      apiBase: localStorage.getItem("apiBase") || "http://127.0.0.1:8000",
+      token: localStorage.getItem("sessionToken") || "",
+      user: null,
+      monthData: null,
+      versions: [],
+      activeTab: "overview"
     };
 
-    function formatDateKey(year, month, day) {
-      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const refs = {
+      message: document.getElementById("message"),
+      apiBaseInput: document.getElementById("apiBaseInput"),
+      employeeIdInput: document.getElementById("employeeIdInput"),
+      loginButton: document.getElementById("loginButton"),
+      logoutButton: document.getElementById("logoutButton"),
+      quickLoginRow: document.getElementById("quickLoginRow"),
+      currentUserBox: document.getElementById("currentUserBox"),
+      yearInput: document.getElementById("yearInput"),
+      monthInput: document.getElementById("monthInput"),
+      reviewDeadlineInput: document.getElementById("reviewDeadlineInput"),
+      loadMonthButton: document.getElementById("loadMonthButton"),
+      startPickingButton: document.getElementById("startPickingButton"),
+      openReviewButton: document.getElementById("openReviewButton"),
+      closeReviewButton: document.getElementById("closeReviewButton"),
+      summaryGrid: document.getElementById("summaryGrid"),
+      participantTableBody: document.getElementById("participantTableBody"),
+      actionSummary: document.getElementById("actionSummary"),
+      pickPanel: document.getElementById("pickPanel"),
+      pickTargetSelect: document.getElementById("pickTargetSelect"),
+      pickQuotaNote: document.getElementById("pickQuotaNote"),
+      carryoverCountInput: document.getElementById("carryoverCountInput"),
+      holidayPickChoices: document.getElementById("holidayPickChoices"),
+      compPickChoices: document.getElementById("compPickChoices"),
+      submitPickButton: document.getElementById("submitPickButton"),
+      editorPanel: document.getElementById("editorPanel"),
+      carryoverEditor: document.getElementById("carryoverEditor"),
+      overrideModeCheckbox: document.getElementById("overrideModeCheckbox"),
+      editorTableBody: document.getElementById("editorTableBody"),
+      saveAssignmentsButton: document.getElementById("saveAssignmentsButton"),
+      scheduleBoard: document.getElementById("scheduleBoard"),
+      refreshVersionsButton: document.getElementById("refreshVersionsButton"),
+      versionList: document.getElementById("versionList"),
+      versionDetail: document.getElementById("versionDetail"),
+      diffFromSelect: document.getElementById("diffFromSelect"),
+      diffToSelect: document.getElementById("diffToSelect"),
+      loadDiffButton: document.getElementById("loadDiffButton"),
+      diffDetail: document.getElementById("diffDetail"),
+      refreshAuditButton: document.getElementById("refreshAuditButton"),
+      auditTableBody: document.getElementById("auditTableBody")
+    };
+
+    function showMessage(text, type = "info") {
+      refs.message.className = `message ${type}`;
+      refs.message.textContent = text;
     }
 
-    function getDaysInMonth(year, month) {
-      return new Date(year, month, 0).getDate();
+    function clearMessage() {
+      refs.message.className = "message";
+      refs.message.textContent = "";
     }
 
-    function getWeekday(year, month, day) {
-      return new Date(year, month - 1, day).getDay();
+    function saveApiBase() {
+      state.apiBase = refs.apiBaseInput.value.trim().replace(/\/$/, "");
+      localStorage.setItem("apiBase", state.apiBase);
     }
 
-    function isSunday(year, month, day) {
-      return getWeekday(year, month, day) === 0;
-    }
-
-    function isSaturday(year, month, day) {
-      return getWeekday(year, month, day) === 6;
-    }
-
-    function isNationalHoliday(year, month, day) {
-      return Object.prototype.hasOwnProperty.call(nationalHolidays, formatDateKey(year, month, day));
-    }
-
-    function getHolidayName(year, month, day) {
-      return nationalHolidays[formatDateKey(year, month, day)] || "";
-    }
-
-    function getCellType(year, month, day) {
-      if (holidayToggle.checked && isNationalHoliday(year, month, day)) {
-        return "nationalHoliday";
+    async function api(path, options = {}) {
+      saveApiBase();
+      const headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      };
+      if (state.token) {
+        headers["X-Session-Token"] = state.token;
       }
 
-      if (isSaturday(year, month, day) || isSunday(year, month, day)) {
-        return "weekend";
-      }
-
-      return "normal";
-    }
-
-    function isDutyHoliday(year, month, day) {
-      if (isSunday(year, month, day)) {
-        return false;
-      }
-
-      if (isSaturday(year, month, day)) {
-        return true;
-      }
-
-      return isNationalHoliday(year, month, day);
-    }
-
-    function getDutyDates(year, month) {
-      const dutyDates = [];
-      const totalDays = getDaysInMonth(year, month);
-      for (let day = 1; day <= totalDays; day += 1) {
-        if (isDutyHoliday(year, month, day)) {
-          dutyDates.push(day);
-        }
-      }
-      return dutyDates;
-    }
-
-    function createDutyCounts(order, dutyDayCount) {
-      const base = Math.floor(dutyDayCount / order.length);
-      const remainder = dutyDayCount % order.length;
-      const dutyCounts = {};
-
-      order.forEach((name, index) => {
-        dutyCounts[name] = base + (index < remainder ? 1 : 0);
+      const response = await fetch(`${state.apiBase}${path}`, {
+        ...options,
+        headers
       });
 
-      return dutyCounts;
+      const contentType = response.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await response.json()
+        : await response.text();
+
+      if (!response.ok) {
+        const detail = typeof data === "string" ? data : data.detail || JSON.stringify(data);
+        throw new Error(detail);
+      }
+
+      return data;
     }
 
-    function assignDutyDates(order, dutyCounts, dutyDates) {
-      const assignmentByDay = {};
-      let cursor = 0;
+    function yearMonthPath() {
+      return `/months/${Number(refs.yearInput.value)}/${Number(refs.monthInput.value)}`;
+    }
 
-      order.forEach((name) => {
-        for (let index = 0; index < dutyCounts[name]; index += 1) {
-          const day = dutyDates[cursor];
-          if (day !== undefined) {
-            assignmentByDay[day] = name;
-          }
-          cursor += 1;
+    function formatUser(user) {
+      return `${user.name} (${user.employee_id})`;
+    }
+
+    function employeeName(employeeId) {
+      const participant = state.monthData?.participants.find((item) => item.employee_id === employeeId);
+      if (participant) {
+        return participant.name;
+      }
+      const user = DEFAULT_USERS.find((item) => item.employeeId === employeeId);
+      return user ? user.name : employeeId || "未指派";
+    }
+
+    function renderQuickLogins() {
+      refs.quickLoginRow.innerHTML = "";
+      DEFAULT_USERS.forEach((user) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = `${user.name} ${user.employeeId}`;
+        button.addEventListener("click", () => {
+          refs.employeeIdInput.value = user.employeeId;
+        });
+        refs.quickLoginRow.appendChild(button);
+      });
+    }
+
+    function renderCurrentUser() {
+      refs.currentUserBox.innerHTML = "";
+      if (!state.user) {
+        refs.currentUserBox.innerHTML = "<span class='pill pending'>尚未登入</span>";
+        return;
+      }
+
+      const items = [
+        `${state.user.name} (${state.user.employee_id})`,
+        state.user.role === "admin" ? "管理者" : "員工",
+        state.user.holiday_fixed_off ? "假日固定休" : "參與排班"
+      ];
+      items.forEach((text, index) => {
+        const span = document.createElement("span");
+        span.className = `pill ${index === 0 ? "done" : "pending"}`;
+        span.textContent = text;
+        refs.currentUserBox.appendChild(span);
+      });
+    }
+
+    async function login() {
+      try {
+        const employeeId = refs.employeeIdInput.value.trim();
+        if (!employeeId) {
+          throw new Error("請先輸入員工編號");
         }
+        const result = await api("/login", {
+          method: "POST",
+          body: JSON.stringify({ employee_id: employeeId })
+        });
+        state.token = result.token;
+        state.user = result.user;
+        localStorage.setItem("sessionToken", state.token);
+        showMessage(`已登入 ${result.user.name}。`, "success");
+        renderCurrentUser();
+        await loadMonth(false);
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function loadMe() {
+      if (!state.token) {
+        state.user = null;
+        renderCurrentUser();
+        return;
+      }
+      try {
+        state.user = await api("/me");
+        renderCurrentUser();
+      } catch (error) {
+        state.token = "";
+        state.user = null;
+        localStorage.removeItem("sessionToken");
+        renderCurrentUser();
+        showMessage("既有登入已失效，請重新登入。", "error");
+      }
+    }
+
+    async function logout() {
+      if (!state.token) {
+        return;
+      }
+      try {
+        await api("/logout", { method: "POST" });
+      } catch (_) {
+      }
+      state.token = "";
+      state.user = null;
+      state.monthData = null;
+      localStorage.removeItem("sessionToken");
+      renderCurrentUser();
+      renderMonth();
+      showMessage("已登出。", "success");
+    }
+
+    function renderSummaryCards() {
+      refs.summaryGrid.innerHTML = "";
+      const cards = state.monthData
+        ? [
+            ["月份狀態", state.monthData.status],
+            ["目前輪到", state.monthData.current_picker_name || "全員已完成初選"],
+            ["目前版本", `v${state.monthData.latest_version_number}`],
+            ["修改截止", state.monthData.review_deadline || "未設定"]
+          ]
+        : [
+            ["月份狀態", "尚未載入"],
+            ["目前輪到", "-"],
+            ["目前版本", "-"],
+            ["修改截止", "-"]
+          ];
+
+      cards.forEach(([label, value]) => {
+        const card = document.createElement("div");
+        card.className = "summary-card";
+        card.innerHTML = `<small>${label}</small><strong>${value}</strong>`;
+        refs.summaryGrid.appendChild(card);
+      });
+    }
+
+    function renderParticipants() {
+      refs.participantTableBody.innerHTML = "";
+      if (!state.monthData) {
+        refs.participantTableBody.innerHTML = "<tr><td colspan='6' class='muted'>尚未載入月份。</td></tr>";
+        return;
+      }
+
+      state.monthData.participants.forEach((participant) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${participant.pick_order}</td>
+          <td>${participant.name}</td>
+          <td>${participant.holiday_quota}</td>
+          <td>${participant.comp_quota}</td>
+          <td>${participant.completed ? "已完成" : "未完成"}</td>
+          <td>
+            值班：${participant.holiday_dates.join("、") || "—"}<br />
+            補休：${participant.comp_dates.join("、") || "—"}<br />
+            跨月：${participant.carryovers.join("、") || "—"}
+          </td>
+        `;
+        refs.participantTableBody.appendChild(row);
+      });
+    }
+
+    function renderActionSummary() {
+      if (!state.monthData || !state.user) {
+        refs.actionSummary.textContent = "請先登入並載入月份。";
+        return;
+      }
+
+      const lines = [
+        `目前身分：${state.user.name} / ${state.user.role === "admin" ? "管理者" : "員工"}`,
+        `流程狀態：${state.monthData.status}`,
+        `目前輪到：${state.monthData.current_picker_name || "無"}`,
+        `你的權限：`,
+        `- 可提交本輪選填：${state.monthData.permissions.can_submit_pick ? "是" : "否"}`,
+        `- 可編輯整月：${state.monthData.permissions.can_edit_all ? "是" : "否"}`,
+        `- 可管理月份：${state.monthData.permissions.can_manage_month ? "是" : "否"}`
+      ];
+      refs.actionSummary.textContent = lines.join("\n");
+    }
+
+    function renderPickForm() {
+      const visible = Boolean(state.monthData?.permissions.can_submit_pick);
+      refs.pickPanel.classList.toggle("hidden", !visible);
+      if (!visible) {
+        return;
+      }
+
+      const participants = state.monthData.participants.filter((item) => !item.completed || state.user.role === "admin");
+      refs.pickTargetSelect.innerHTML = "";
+      participants.forEach((participant) => {
+        const option = document.createElement("option");
+        option.value = participant.employee_id;
+        option.textContent = `${participant.name} (${participant.employee_id})`;
+        option.selected = participant.employee_id === (state.monthData.current_picker_id || state.user.employee_id);
+        refs.pickTargetSelect.appendChild(option);
       });
 
-      return assignmentByDay;
-    }
+      const renderChoices = () => {
+        const target = state.monthData.participants.find((item) => item.employee_id === refs.pickTargetSelect.value);
+        refs.pickQuotaNote.textContent = target
+          ? `本輪需選 ${target.holiday_quota} 天值班與 ${target.comp_quota} 天補休。`
+          : "";
+        refs.carryoverCountInput.max = target ? String(target.comp_quota) : "0";
 
-    function getNextOrder(order, dutyCounts) {
-      return [...order].sort((nameA, nameB) => {
-        if (dutyCounts[nameA] !== dutyCounts[nameB]) {
-          return dutyCounts[nameA] - dutyCounts[nameB];
-        }
-        return order.indexOf(nameA) - order.indexOf(nameB);
-      });
-    }
-
-    function generateYearData(year) {
-      const records = [];
-      let carryOrder = [...initialDutyOrder];
-
-      for (let month = 1; month <= 12; month += 1) {
-        const overrideOrder = state.manualOverrides[month];
-        const currentOrder = overrideOrder ? [...overrideOrder] : [...carryOrder];
-        const dutyDates = getDutyDates(year, month);
-        const dutyCounts = createDutyCounts(currentOrder, dutyDates.length);
-        const assignmentByDay = assignDutyDates(currentOrder, dutyCounts, dutyDates);
-        const nextOrder = getNextOrder(currentOrder, dutyCounts);
-
-        records.push({
-          month,
-          order: [...currentOrder],
-          dutyDates,
-          dutyCounts,
-          assignmentByDay,
-          nextOrder,
-          isManualOverride: Boolean(overrideOrder)
+        refs.holidayPickChoices.innerHTML = "";
+        state.monthData.holiday_dates.forEach((item) => {
+          const assignedElsewhere = item.assigned_to && item.assigned_to !== refs.pickTargetSelect.value;
+          const label = document.createElement("label");
+          label.className = `choice-chip ${assignedElsewhere ? "dim" : ""}`;
+          label.innerHTML = `
+            <input type="checkbox" data-type="holiday" value="${item.date}" ${assignedElsewhere ? "disabled" : ""} />
+            ${item.date}
+          `;
+          refs.holidayPickChoices.appendChild(label);
         });
 
-        carryOrder = nextOrder;
-      }
+        refs.compPickChoices.innerHTML = "";
+        state.monthData.comp_dates.forEach((item) => {
+          const blocked = item.remaining <= 0;
+          const label = document.createElement("label");
+          label.className = `choice-chip ${blocked ? "dim" : ""}`;
+          label.innerHTML = `
+            <input type="checkbox" data-type="comp" value="${item.date}" ${blocked ? "disabled" : ""} />
+            ${item.date} (${item.remaining}/${item.capacity})
+          `;
+          refs.compPickChoices.appendChild(label);
+        });
+      };
 
-      return records;
+      refs.pickTargetSelect.onchange = renderChoices;
+      renderChoices();
     }
 
-    function getMonthRecord(month) {
-      return state.yearData.find((record) => record.month === month) || null;
-    }
-
-    function createCell(text, classNames = [], title = "") {
-      const cell = document.createElement("td");
-      cell.textContent = text;
-      classNames.forEach((name) => cell.classList.add(name));
-      if (title) {
-        cell.title = title;
-      }
-      return cell;
-    }
-
-    function createLeftDateTitleCell() {
-      const cell = document.createElement("td");
-      cell.classList.add("left-date-title");
-      cell.colSpan = 2;
-      cell.textContent = "日期";
-      return cell;
-    }
-
-    function createEmployeeHeaderRow() {
-      const row = document.createElement("tr");
-      row.appendChild(createCell("員編", ["employee-id-header"]));
-      row.appendChild(createCell("姓名/星期", ["employee-name-header"]));
-      return row;
-    }
-
-    function getEmployeeCellDisplay(employee, record, day) {
-      const classNames = ["schedule-input-cell"];
-      const cellType = getCellType(state.currentYear, record.month, day);
-      const assignedName = record.assignmentByDay[day] || "";
-      let text = "";
-
-      if (cellType === "nationalHoliday") {
-        classNames.push("national-holiday");
-      } else if (cellType === "weekend") {
-        classNames.push("weekend");
-      }
-
-      if (assignedName === employee.name) {
-        classNames.push("duty-day");
-        text = "班";
-      } else if (isSunday(state.currentYear, record.month, day)) {
-        text = originalHolidayToggle.checked ? "例" : "";
-      } else if (isSaturday(state.currentYear, record.month, day) || isNationalHoliday(state.currentYear, record.month, day)) {
-        text = originalHolidayToggle.checked ? "休" : "";
-      }
-
-      return { text, classNames };
-    }
-
-    function createEmployeeRow(employee, record) {
-      const row = document.createElement("tr");
-      row.appendChild(createCell(employee.id, ["employee-id"]));
-      row.appendChild(createCell(employee.name, ["employee-name"]));
-
-      const daysInMonth = getDaysInMonth(state.currentYear, record.month);
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        const meta = getEmployeeCellDisplay(employee, record, day);
-        row.appendChild(createCell(meta.text, meta.classNames, getHolidayName(state.currentYear, record.month, day)));
-      }
-
-      return row;
-    }
-
-    function updateTableScale() {
-      if (detailPanel.classList.contains("active") === false) {
+    function renderEditor() {
+      const visible = Boolean(state.monthData?.permissions.can_edit_all);
+      refs.editorPanel.classList.toggle("hidden", !visible);
+      if (!visible) {
         return;
       }
 
-      tableScaleStage.style.height = "";
-      scheduleTable.style.transform = "scale(1)";
+      refs.overrideModeCheckbox.checked = false;
+      refs.overrideModeCheckbox.disabled = !state.monthData.permissions.is_admin;
 
-      const availableWidth = tableWrapper.clientWidth;
-      const tableWidth = scheduleTable.offsetWidth;
-      const tableHeight = scheduleTable.offsetHeight;
-      if (availableWidth === 0 || tableWidth === 0 || tableHeight === 0) {
-        return;
-      }
+      refs.carryoverEditor.innerHTML = "";
+      state.monthData.participants.forEach((participant) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "field";
+        wrapper.innerHTML = `
+          <label>${participant.name}</label>
+          <input data-carryover-for="${participant.employee_id}" value="${participant.carryovers.join(",")}" placeholder="例如 2026-05-24,2026-05-31" />
+        `;
+        refs.carryoverEditor.appendChild(wrapper);
+      });
 
-      const scale = Math.min(1, availableWidth / tableWidth);
-      scheduleTable.style.transform = `scale(${scale})`;
-      tableScaleStage.style.height = `${Math.ceil(tableHeight * scale)}px`;
-    }
+      const holidayMap = state.monthData.assignments.holiday || {};
+      const compMap = state.monthData.assignments.comp || {};
+      const holidayDateMap = new Map(state.monthData.holiday_dates.map((item) => [item.date, item]));
+      const compDateMap = new Map(state.monthData.comp_dates.map((item) => [item.date, item]));
+      const allDates = Array.from(new Set([
+        ...state.monthData.holiday_dates.map((item) => item.date),
+        ...state.monthData.comp_dates.map((item) => item.date)
+      ])).sort();
 
-    function setActiveTab(tabName) {
-      state.activeTab = tabName;
-      summaryTabButton.classList.toggle("active", tabName === "summary");
-      detailTabButton.classList.toggle("active", tabName === "detail");
-      summaryPanel.classList.toggle("active", tabName === "summary");
-      detailPanel.classList.toggle("active", tabName === "detail");
-
-      if (tabName === "detail") {
-        updateTableScale();
-      }
-    }
-
-    function renderSummary(record) {
-      summaryDutyDayCount.textContent = `${record.dutyDates.length} 天`;
-      summaryCurrentOrder.innerHTML = record.order.join(" → ");
-      summaryDutyCounts.innerHTML = record.order.map((name) => `${name} ${record.dutyCounts[name]} 天`).join("<br>");
-      summaryNextOrder.innerHTML = record.nextOrder.join(" → ");
-    }
-
-    function renderAnnualSummary() {
-      summaryTableBody.innerHTML = "";
-      state.yearData.forEach((record) => {
+      refs.editorTableBody.innerHTML = "";
+      allDates.forEach((dateKey) => {
+        const holidayInfo = holidayDateMap.get(dateKey);
+        const compInfo = compDateMap.get(dateKey);
         const row = document.createElement("tr");
-        row.appendChild(createCell(`${record.month} 月`));
-        row.appendChild(createCell(`${record.dutyDates.length} 天`));
-        row.appendChild(createCell(record.order.join(" → ")));
-        row.appendChild(createCell(record.order.map((name) => `${name} ${record.dutyCounts[name]} 天`).join("、")));
-        row.appendChild(createCell(record.nextOrder.join(" → ")));
+        const holidaySelect = holidayInfo
+          ? `
+            <select data-holiday-date="${dateKey}">
+              ${state.monthData.participants.map((participant) => `
+                <option value="${participant.employee_id}" ${holidayMap[dateKey] === participant.employee_id ? "selected" : ""}>
+                  ${participant.name}
+                </option>
+              `).join("")}
+            </select>
+          `
+          : "<span class='muted'>—</span>";
 
-        const sourceCell = document.createElement("td");
-        const sourcePill = document.createElement("span");
-        sourcePill.className = `status-pill ${record.isManualOverride ? "manual" : "auto"}`;
-        sourcePill.textContent = record.isManualOverride ? "手動覆寫" : "自動承接";
-        sourceCell.appendChild(sourcePill);
-        row.appendChild(sourceCell);
+        const compChoices = compInfo
+          ? state.monthData.participants.map((participant) => `
+              <label class="choice-chip">
+                <input
+                  type="checkbox"
+                  data-comp-date="${dateKey}"
+                  value="${participant.employee_id}"
+                  ${(compMap[dateKey] || []).includes(participant.employee_id) ? "checked" : ""}
+                />
+                ${participant.name}
+              </label>
+            `).join("")
+          : "<span class='muted'>—</span>";
 
-        const overrideCell = document.createElement("td");
-        const editor = document.createElement("div");
-        editor.className = "order-editor";
-        const selection = record.isManualOverride ? state.manualOverrides[record.month] : record.order;
+        row.innerHTML = `
+          <td>${dateKey}</td>
+          <td>${holidayInfo ? (holidayInfo.label || "值班日") : "平日補休"}</td>
+          <td>${holidaySelect}</td>
+          <td><div class="chip-list">${compChoices}</div></td>
+          <td>
+            ${compInfo
+              ? `<input data-capacity-date="${dateKey}" type="number" min="0" value="${compInfo.capacity}" ${state.monthData.permissions.is_admin ? "" : "disabled"} />`
+              : "<span class='muted'>—</span>"}
+          </td>
+        `;
+        refs.editorTableBody.appendChild(row);
+      });
+    }
 
-        dutyEmployeeNames.forEach((_, slotIndex) => {
-          const select = document.createElement("select");
-          select.dataset.month = String(record.month);
-          select.dataset.slot = String(slotIndex);
+    function renderScheduleBoard() {
+      refs.scheduleBoard.innerHTML = "";
+      if (!state.monthData) {
+        refs.scheduleBoard.innerHTML = "<div class='code-box'>尚未載入月份。</div>";
+        return;
+      }
+      const holidayMap = state.monthData.assignments.holiday || {};
+      const compMap = state.monthData.assignments.comp || {};
+      const holidayDateMap = new Map(state.monthData.holiday_dates.map((item) => [item.date, item]));
+      const compDateMap = new Map(state.monthData.comp_dates.map((item) => [item.date, item]));
+      const allDates = Array.from(new Set([
+        ...state.monthData.holiday_dates.map((item) => item.date),
+        ...state.monthData.comp_dates.map((item) => item.date)
+      ])).sort();
 
-          dutyEmployeeNames.forEach((name) => {
+      allDates.forEach((dateKey) => {
+        const holidayInfo = holidayDateMap.get(dateKey);
+        const compInfo = compDateMap.get(dateKey);
+        const row = document.createElement("div");
+        row.className = "schedule-row";
+        row.innerHTML = `
+          <div>
+            <div class="date-title">${dateKey}</div>
+            <div class="muted">${holidayInfo ? (holidayInfo.label || "值班日") : "平日補休候選日"}</div>
+          </div>
+          <div>
+            <strong>值班</strong><br />
+            ${holidayInfo ? employeeName(holidayMap[dateKey]) : "<span class='muted'>—</span>"}
+          </div>
+          <div>
+            <strong>補休</strong><br />
+            ${(compMap[dateKey] || []).map(employeeName).join("、") || "<span class='muted'>—</span>"}
+          </div>
+          <div>
+            <strong>容量</strong><br />
+            ${compInfo ? `${compInfo.used}/${compInfo.capacity}` : "<span class='muted'>—</span>"}
+          </div>
+        `;
+        refs.scheduleBoard.appendChild(row);
+      });
+    }
+
+    function renderMonth() {
+      renderSummaryCards();
+      renderParticipants();
+      renderActionSummary();
+      renderPickForm();
+      renderEditor();
+      renderScheduleBoard();
+      refreshButtons();
+    }
+
+    function refreshButtons() {
+      const canManage = Boolean(state.user?.role === "admin");
+      refs.startPickingButton.disabled = !canManage;
+      refs.openReviewButton.disabled = !canManage || !state.monthData;
+      refs.closeReviewButton.disabled = !canManage || !state.monthData;
+      refs.loadMonthButton.disabled = !state.user;
+    }
+
+    async function loadMonth(showSuccess = true) {
+      if (!state.user) {
+        renderMonth();
+        return;
+      }
+      try {
+        state.monthData = await api(yearMonthPath());
+        renderMonth();
+        if (showSuccess) {
+          showMessage(`已載入 ${state.monthData.year} 年 ${state.monthData.month} 月。`, "success");
+        }
+      } catch (error) {
+        state.monthData = null;
+        renderMonth();
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function startPicking() {
+      try {
+        const payload = {
+          review_deadline: refs.reviewDeadlineInput.value ? new Date(refs.reviewDeadlineInput.value).toISOString() : null
+        };
+        state.monthData = await api(`${yearMonthPath()}/start-picking`, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        renderMonth();
+        showMessage("月份已建立並進入順序選填。", "success");
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function openReview() {
+      try {
+        const payload = {
+          review_deadline: refs.reviewDeadlineInput.value ? new Date(refs.reviewDeadlineInput.value).toISOString() : null
+        };
+        await api(`${yearMonthPath()}/review-window/open`, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        await loadMonth(false);
+        showMessage("已開啟修改期。", "success");
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function closeReview() {
+      try {
+        await api(`${yearMonthPath()}/review-window/close`, {
+          method: "POST",
+          body: JSON.stringify({})
+        });
+        await loadMonth(false);
+        showMessage("月份已鎖定。", "success");
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function submitPick() {
+      try {
+        const holidayDates = Array.from(refs.holidayPickChoices.querySelectorAll("input:checked")).map((input) => input.value);
+        const compDates = Array.from(refs.compPickChoices.querySelectorAll("input:checked")).map((input) => input.value);
+        const carryoverCount = Number(refs.carryoverCountInput.value || 0);
+        await api(`${yearMonthPath()}/picks/submit`, {
+          method: "POST",
+          body: JSON.stringify({
+            employee_id: refs.pickTargetSelect.value || null,
+            holiday_dates: holidayDates,
+            comp_dates: compDates,
+            carryover_count: carryoverCount
+          })
+        });
+        await loadMonth(false);
+        showMessage("本輪選填已送出。", "success");
+        await loadVersions();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    function collectReviewPayload() {
+      const holidayAssignments = {};
+      refs.editorTableBody.querySelectorAll("select[data-holiday-date]").forEach((select) => {
+        holidayAssignments[select.dataset.holidayDate] = select.value;
+      });
+
+      const compAssignments = {};
+      refs.editorTableBody.querySelectorAll("input[data-comp-date]").forEach((input) => {
+        if (!compAssignments[input.dataset.compDate]) {
+          compAssignments[input.dataset.compDate] = [];
+        }
+        if (input.checked) {
+          compAssignments[input.dataset.compDate].push(input.value);
+        }
+      });
+
+      const capacities = {};
+      refs.editorTableBody.querySelectorAll("input[data-capacity-date]").forEach((input) => {
+        capacities[input.dataset.capacityDate] = Number(input.value || 0);
+      });
+
+      const pendingCarryovers = [];
+      refs.carryoverEditor.querySelectorAll("input[data-carryover-for]").forEach((input) => {
+        const employeeId = input.dataset.carryoverFor;
+        const values = input.value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+        values.forEach((value) => {
+          pendingCarryovers.push({
+            employee_id: employeeId,
+            source_holiday_date: value,
+            requested_target_month: null
+          });
+        });
+      });
+
+      return {
+        version_number: state.monthData.latest_version_number,
+        override_mode: refs.overrideModeCheckbox.checked,
+        holiday_assignments: holidayAssignments,
+        comp_assignments: compAssignments,
+        capacities,
+        pending_carryovers: pendingCarryovers
+      };
+    }
+
+    async function saveAssignments() {
+      try {
+        const payload = collectReviewPayload();
+        await api(`${yearMonthPath()}/assignments/save`, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        await loadMonth(false);
+        showMessage("整月版本已儲存。", "success");
+        await loadVersions();
+        await loadAudit();
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
+
+    async function loadVersions() {
+      if (!state.monthData) {
+        refs.versionList.textContent = "尚未載入月份。";
+        return;
+      }
+      try {
+        const result = await api(`${yearMonthPath()}/versions`);
+        state.versions = result.items || [];
+        if (state.versions.length === 0) {
+          refs.versionList.textContent = "尚無版本。";
+          refs.diffFromSelect.innerHTML = "";
+          refs.diffToSelect.innerHTML = "";
+          return;
+        }
+
+        refs.versionList.innerHTML = "";
+        state.versions.forEach((version) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.style.display = "block";
+          button.style.width = "100%";
+          button.style.marginBottom = "8px";
+          button.dataset.versionId = String(version.id);
+          button.textContent = `v${version.version_number} | ${version.version_name} | ${version.source}`;
+          button.addEventListener("click", () => loadVersionDetail(version.id));
+          refs.versionList.appendChild(button);
+        });
+
+        [refs.diffFromSelect, refs.diffToSelect].forEach((select, index) => {
+          select.innerHTML = "";
+          state.versions.forEach((version, versionIndex) => {
             const option = document.createElement("option");
-            option.value = name;
-            option.textContent = `${slotIndex + 1}. ${name}`;
-            option.selected = selection[slotIndex] === name;
+            option.value = String(version.id);
+            option.textContent = `v${version.version_number} ${version.version_name}`;
+            option.selected = versionIndex === (index === 0 ? state.versions.length - 1 : 0);
             select.appendChild(option);
           });
-
-          editor.appendChild(select);
         });
 
-        const actions = document.createElement("div");
-        actions.className = "order-actions";
+        await loadVersionDetail(state.versions[0].id);
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
 
-        const applyButton = document.createElement("button");
-        applyButton.type = "button";
-        applyButton.className = "small-button primary";
-        applyButton.textContent = "套用順序";
-        applyButton.addEventListener("click", () => applyOverride(record.month));
+    async function loadVersionDetail(versionId) {
+      try {
+        const result = await api(`${yearMonthPath()}/versions/${versionId}`);
+        refs.versionDetail.textContent = JSON.stringify(result.snapshot, null, 2);
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
 
-        const restoreButton = document.createElement("button");
-        restoreButton.type = "button";
-        restoreButton.className = "small-button";
-        restoreButton.textContent = "還原自動";
-        restoreButton.disabled = !record.isManualOverride;
-        restoreButton.addEventListener("click", () => restoreOverride(record.month));
+    async function loadDiff() {
+      try {
+        const fromId = refs.diffFromSelect.value;
+        const toId = refs.diffToSelect.value;
+        if (!fromId || !toId) {
+          throw new Error("請先選擇兩個版本");
+        }
+        const result = await api(`${yearMonthPath()}/diff?from=${fromId}&to=${toId}`);
+        refs.diffDetail.textContent = JSON.stringify(result.diff, null, 2);
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
 
-        actions.appendChild(applyButton);
-        actions.appendChild(restoreButton);
+    async function loadAudit() {
+      try {
+        const result = await api("/audit-logs");
+        refs.auditTableBody.innerHTML = "";
+        (result.items || []).forEach((item) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item.created_at}</td>
+            <td>${item.action_type}</td>
+            <td>${item.actor_id || "系統"}</td>
+            <td>${item.year || ""}${item.month ? `/${item.month}` : ""}</td>
+            <td>${JSON.stringify(item.after_payload || item.before_payload || {}, null, 0)}</td>
+          `;
+          refs.auditTableBody.appendChild(row);
+        });
+      } catch (error) {
+        showMessage(error.message, "error");
+      }
+    }
 
-        overrideCell.appendChild(editor);
-        overrideCell.appendChild(actions);
-        row.appendChild(overrideCell);
-        summaryTableBody.appendChild(row);
+    function activateTab(tabName) {
+      state.activeTab = tabName;
+      document.querySelectorAll(".tab").forEach((button) => {
+        button.classList.toggle("active", button.dataset.tab === tabName);
+      });
+      document.querySelectorAll(".tab-panel").forEach((panel) => {
+        panel.classList.toggle("active", panel.id === `${tabName}Tab`);
+      });
+      if (tabName === "versions" && state.monthData) {
+        loadVersions();
+      }
+      if (tabName === "audit" && state.user) {
+        loadAudit();
+      }
+    }
+
+    function bindEvents() {
+      refs.apiBaseInput.value = state.apiBase;
+      refs.loginButton.addEventListener("click", login);
+      refs.logoutButton.addEventListener("click", logout);
+      refs.loadMonthButton.addEventListener("click", () => loadMonth());
+      refs.startPickingButton.addEventListener("click", startPicking);
+      refs.openReviewButton.addEventListener("click", openReview);
+      refs.closeReviewButton.addEventListener("click", closeReview);
+      refs.submitPickButton.addEventListener("click", submitPick);
+      refs.saveAssignmentsButton.addEventListener("click", saveAssignments);
+      refs.refreshVersionsButton.addEventListener("click", loadVersions);
+      refs.loadDiffButton.addEventListener("click", loadDiff);
+      refs.refreshAuditButton.addEventListener("click", loadAudit);
+      refs.apiBaseInput.addEventListener("change", saveApiBase);
+      document.querySelectorAll(".tab").forEach((button) => {
+        button.addEventListener("click", () => activateTab(button.dataset.tab));
       });
     }
 
-    function readOverrideSelection(month) {
-      const selects = Array.from(document.querySelectorAll(`select[data-month="${month}"]`));
-      const values = selects.map((select) => select.value);
-      if (values.length !== dutyEmployeeNames.length) {
-        return null;
+    async function init() {
+      renderQuickLogins();
+      bindEvents();
+      renderCurrentUser();
+      renderMonth();
+      refreshButtons();
+      await loadMe();
+      if (state.user) {
+        await loadMonth(false);
       }
-
-      const uniqueValues = new Set(values);
-      if (uniqueValues.size !== dutyEmployeeNames.length) {
-        return null;
-      }
-
-      return values;
+      clearMessage();
     }
 
-    function applyOverride(month) {
-      const selection = readOverrideSelection(month);
-      if (!selection) {
-        summaryMessage.textContent = "覆寫順序必須剛好包含 4 位不同人員，不能重複。";
-        return;
-      }
-
-      state.manualOverrides[month] = selection;
-      renderMonthView();
-      summaryMessage.textContent = `${month} 月順序已改為手動覆寫，後續月份已重新計算。`;
-    }
-
-    function restoreOverride(month) {
-      delete state.manualOverrides[month];
-      renderMonthView();
-      summaryMessage.textContent = `${month} 月已還原為自動承接順序，後續月份已重新計算。`;
-    }
-
-    function renderHolidayFooter(record) {
-      const holidayNotes = [];
-      const daysInMonth = getDaysInMonth(state.currentYear, record.month);
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        if (holidayToggle.checked && isNationalHoliday(state.currentYear, record.month, day)) {
-          holidayNotes.push(`${record.month}/${day} ${getHolidayName(state.currentYear, record.month, day)}`);
-        }
-      }
-
-      if (holidayNotes.length > 0) {
-        holidayFooter.style.display = "block";
-        holidayFooter.textContent = `國定假日：${holidayNotes.join("、")}`;
-      } else {
-        holidayFooter.style.display = "none";
-        holidayFooter.textContent = "";
-      }
-    }
-
-    function renderRulesFooter(record) {
-      scheduleRulesFooter.style.display = "block";
-      scheduleRulesFooter.innerHTML = `
-        <div><strong>本月排班順序：</strong>${record.order.join(" → ")}</div>
-        <div><strong>本月假日上班次數：</strong>${record.order.map((name) => `${name} ${record.dutyCounts[name]} 天`).join("、")}</div>
-        <div><strong>下個月順序：</strong>${record.nextOrder.join(" → ")}</div>
-      `;
-    }
-
-    function renderMonthView() {
-      const year = Number(yearInput.value);
-      const month = Number(monthInput.value);
-      const isValidYear = Number.isInteger(year) && year >= 2026;
-      const isValidMonth = Number.isInteger(month) && month >= 1 && month <= 12;
-
-      if (!isValidYear || !isValidMonth) {
-        scheduleTitle.textContent = "單月月曆";
-        summaryDutyDayCount.textContent = "-";
-        summaryCurrentOrder.textContent = "-";
-        summaryDutyCounts.textContent = "-";
-        summaryNextOrder.textContent = "-";
-        tableWrapper.style.display = "none";
-        scheduleTableBody.innerHTML = "";
-        holidayFooter.style.display = "none";
-        scheduleRulesFooter.style.display = "none";
-        return;
-      }
-
-      state.currentYear = year;
-      state.yearData = generateYearData(year);
-      renderAnnualSummary();
-      const record = getMonthRecord(month);
-      if (!record) {
-        return;
-      }
-
-      renderSummary(record);
-      scheduleTitle.textContent = `${year}年${month}月排班表`;
-      tableWrapper.style.display = "block";
-
-      const daysInMonth = getDaysInMonth(year, month);
-      const dateRow = document.createElement("tr");
-      const weekdayRow = createEmployeeHeaderRow();
-      dateRow.appendChild(createLeftDateTitleCell());
-
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        const cellType = getCellType(year, month, day);
-        const classNames = [];
-        const holidayName = getHolidayName(year, month, day);
-        if (cellType === "nationalHoliday") {
-          classNames.push("national-holiday");
-        } else if (cellType === "weekend") {
-          classNames.push("weekend");
-        }
-
-        dateRow.appendChild(createCell(String(day), classNames, holidayName));
-        weekdayRow.appendChild(createCell(weekdayNames[getWeekday(year, month, day)], classNames, holidayName));
-      }
-
-      scheduleTableBody.innerHTML = "";
-      scheduleTableBody.appendChild(dateRow);
-      scheduleTableBody.appendChild(weekdayRow);
-      employees.forEach((employee) => {
-        scheduleTableBody.appendChild(createEmployeeRow(employee, record));
-      });
-
-      renderHolidayFooter(record);
-      renderRulesFooter(record);
-      updateTableScale();
-    }
-
-    yearInput.addEventListener("input", renderMonthView);
-    monthInput.addEventListener("input", renderMonthView);
-    holidayToggle.addEventListener("change", renderMonthView);
-    originalHolidayToggle.addEventListener("change", renderMonthView);
-    summaryTabButton.addEventListener("click", () => setActiveTab("summary"));
-    detailTabButton.addEventListener("click", () => setActiveTab("detail"));
-    window.addEventListener("resize", updateTableScale);
-
-    yearInput.value = "2026";
-    monthInput.value = "5";
-    renderMonthView();
+    init();
   </script>
 </body>
 </html>
