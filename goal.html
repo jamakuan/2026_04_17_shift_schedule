@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>年度假日值班排班進度</title>
+  <title>排班系統計畫進度</title>
   <style>
     :root {
       color-scheme: light;
@@ -175,9 +175,9 @@
 <body>
   <div class="page">
     <section class="header">
-      <h1>年度假日值班排班進度</h1>
-      <p>此頁面用來記錄功能段落級進度，會隨實作進展同步更新。</p>
-      <p class="meta">最後更新：2026-05-21 23:49</p>
+      <h1>排班系統計畫進度</h1>
+      <p>此頁面用來記錄各計畫的功能段落級進度，會隨任務拆分與實作進展同步更新。</p>
+      <p class="meta">最後更新：2026-05-22 01:07</p>
       <p class="refresh-info">距離自動刷新還有 <span id="refresh-countdown">15</span> 秒</p>
       <noscript>
         <p class="meta">此頁面需啟用 JavaScript 才會顯示倒數並每 15 秒自動刷新。</p>
@@ -185,6 +185,146 @@
     </section>
 
     <section class="project-list" aria-label="計劃單列表">
+      <article class="project-card">
+        <header class="project-card__header">
+          <h2 class="project-card__title">多用戶順序選填排班系統改版計畫</h2>
+          <p class="project-card__meta">建立日期：2026-05-22 00:43｜狀態：已完成</p>
+          <p class="project-card__meta">用途：把單機靜態排班頁改造成有登入、共享狀態、順序選填、版本與稽核紀錄的多用戶系統。</p>
+        </header>
+        <div class="project-card__body">
+          <table class="project-card__table">
+            <thead>
+              <tr>
+                <th style="width: 220px;">任務</th>
+                <th style="width: 120px;">狀態</th>
+                <th style="width: 180px;">完成時間</th>
+                <th>摘要</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>任務拆分與追蹤建置</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 00:43</td>
+                <td>已依計畫文件整理可執行任務，並同步建立 `goal.html` 追蹤卡片。</td>
+              </tr>
+              <tr>
+                <td>FastAPI 與 SQLite 骨架</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 00:50</td>
+                <td>已建立 `pyproject.toml`、`app/` 結構、SQLite 初始化與 `/`、`/healthz` 最小 API 入口。</td>
+              </tr>
+              <tr>
+                <td>登入與 audit log</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已加入員工登入、session 驗證、`/me`、登出與完整 audit log 紀錄。</td>
+              </tr>
+              <tr>
+                <td>月份狀態機與資料模型</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已建立月份、參與者、假日日期、補休日容量、待處理補休與流程狀態資料模型。</td>
+              </tr>
+              <tr>
+                <td>順序選填與共享 API</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已完成月份查詢、開始選填、當前順位驗證、quota 驗證、日期占用檢查與管理者代填。</td>
+              </tr>
+              <tr>
+                <td>版本、diff 與修改期</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已支援 review window、鎖定、版本快照、版本比較、stale version 檢查與 audit log。</td>
+              </tr>
+              <tr>
+                <td>前端多用戶流程改造</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已將原頁面改成多用戶前端，可登入、建立月份、順序選填、整月編輯、看版本與 log。</td>
+              </tr>
+              <tr>
+                <td>驗證與收尾</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已補上端到端測試、修正跨月與版本快照邊界問題，並完成實際瀏覽器畫面驗證。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="project-card">
+        <header class="project-card__header">
+          <h2 class="project-card__title">假日值班補休規則整合計畫</h2>
+          <p class="project-card__meta">建立日期：2026-05-22 00:43｜狀態：已完成</p>
+          <p class="project-card__meta">用途：將假日值班順序選填擴充為同回合同步選補休，並納入容量、跨月待處理與版本紀錄。</p>
+        </header>
+        <div class="project-card__body">
+          <table class="project-card__table">
+            <thead>
+              <tr>
+                <th style="width: 220px;">任務</th>
+                <th style="width: 120px;">狀態</th>
+                <th style="width: 180px;">完成時間</th>
+                <th>摘要</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>任務拆分與追蹤建置</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 00:43</td>
+                <td>已依補休整合計畫整理任務，並同步建立 `goal.html` 追蹤卡片。</td>
+              </tr>
+              <tr>
+                <td>補休資料模型擴充</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已加入補休 quota、assignment 類型、平日容量與跨月待處理資料模型。</td>
+              </tr>
+              <tr>
+                <td>月份初始化與容量預設</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>建立月份時會同步算出平日補休日候選清單、預設容量與共享摘要資料。</td>
+              </tr>
+              <tr>
+                <td>值班與補休一次選填</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已完成值班與補休同回合提交、排序對應驗證與跨月待處理建立。</td>
+              </tr>
+              <tr>
+                <td>修改期補休驗證</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已整合修改期補休驗證、容量檢查、管理者覆寫與 stale version 保護。</td>
+              </tr>
+              <tr>
+                <td>容量調整與版本紀錄</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已支援容量調整、版本 diff、補休相關 audit log 與版本快照內容。</td>
+              </tr>
+              <tr>
+                <td>前端補休互動</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>前端已顯示補休候選日、剩餘容量、跨月待處理輸入與錯誤回饋。</td>
+              </tr>
+              <tr>
+                <td>驗證與收尾</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-22 01:07</td>
+                <td>已用端到端測試與實際月份腳本確認補休流程、跨月待處理與版本行為可用。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
       <article class="project-card">
         <header class="project-card__header">
           <h2 class="project-card__title">goal.html 多計劃單置頂更新</h2>
