@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>年度週六值班排班進度</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --line: #d1d5db;
+      --text: #111827;
+      --muted: #6b7280;
+      --done: #166534;
+      --done-bg: #dcfce7;
+      --active: #1d4ed8;
+      --active-bg: #dbeafe;
+      --pending: #92400e;
+      --pending-bg: #fef3c7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .header,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .header {
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .header p,
+    .meta {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .meta {
+      margin-top: 12px;
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .status.done {
+      color: var(--done);
+      background: var(--done-bg);
+    }
+
+    .status.active {
+      color: var(--active);
+      background: var(--active-bg);
+    }
+
+    .status.pending {
+      color: var(--pending);
+      background: var(--pending-bg);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="header">
+      <h1>年度週六值班排班進度</h1>
+      <p>此頁面用來記錄功能段落級進度，會隨實作進展同步更新。</p>
+      <p class="meta">最後更新：2026-05-21 15:55</p>
+    </section>
+
+    <section class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 220px;">段落</th>
+            <th style="width: 120px;">狀態</th>
+            <th style="width: 180px;">完成時間</th>
+            <th>摘要</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>計畫檔</td>
+            <td><span class="status done">已完成</span></td>
+            <td>2026-05-21 15:55</td>
+            <td>新增年度週六值班排班整合計畫，定義功能段落、commit 拆分與驗收條件。</td>
+          </tr>
+          <tr>
+            <td>goal.html 骨架</td>
+            <td><span class="status done">已完成</span></td>
+            <td>2026-05-21 15:55</td>
+            <td>建立獨立進度頁，提供段落、狀態、時間與摘要欄位。</td>
+          </tr>
+          <tr>
+            <td>年度排班引擎</td>
+            <td><span class="status active">進行中</span></td>
+            <td>-</td>
+            <td>準備把每月週六數套進 4 人值班分配與下月順序推導。</td>
+          </tr>
+          <tr>
+            <td>年度摘要 Tab</td>
+            <td><span class="status pending">待處理</span></td>
+            <td>-</td>
+            <td>尚未新增 1 到 12 月的摘要檢視與編輯入口。</td>
+          </tr>
+          <tr>
+            <td>單月月曆整合</td>
+            <td><span class="status pending">待處理</span></td>
+            <td>-</td>
+            <td>尚未將週六值班結果寫進完整月曆表格。</td>
+          </tr>
+          <tr>
+            <td>手動覆寫重算</td>
+            <td><span class="status pending">待處理</span></td>
+            <td>-</td>
+            <td>尚未支援修改指定月份順序後自動重算後續月份。</td>
+          </tr>
+          <tr>
+            <td>驗證與收尾</td>
+            <td><span class="status pending">待處理</span></td>
+            <td>-</td>
+            <td>尚未完成規則驗證、畫面檢查與最終整理。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>
