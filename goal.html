@@ -80,6 +80,44 @@
       padding: 20px;
     }
 
+    .project-list {
+      display: grid;
+      gap: 20px;
+    }
+
+    .project-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .project-card__header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      background: #fafafa;
+    }
+
+    .project-card__title {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .project-card__meta {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .project-card__body {
+      padding: 0 20px 8px;
+    }
+
+    .project-card__table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -125,6 +163,13 @@
       color: var(--pending);
       background: var(--pending-bg);
     }
+
+    .status-note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -132,68 +177,124 @@
     <section class="header">
       <h1>年度假日值班排班進度</h1>
       <p>此頁面用來記錄功能段落級進度，會隨實作進展同步更新。</p>
-      <p class="meta">最後更新：2026-05-21 17:10</p>
+      <p class="meta">最後更新：2026-05-21 23:49</p>
       <p class="refresh-info">距離自動刷新還有 <span id="refresh-countdown">15</span> 秒</p>
       <noscript>
         <p class="meta">此頁面需啟用 JavaScript 才會顯示倒數並每 15 秒自動刷新。</p>
       </noscript>
     </section>
 
-    <section class="panel">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 220px;">段落</th>
-            <th style="width: 120px;">狀態</th>
-            <th style="width: 180px;">完成時間</th>
-            <th>摘要</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>計畫檔</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 15:55</td>
-            <td>新增年度假日值班排班整合計畫，定義功能段落、commit 拆分與驗收條件。</td>
-          </tr>
-          <tr>
-            <td>goal.html 骨架</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 15:55</td>
-            <td>建立獨立進度頁，提供段落、狀態、時間與摘要欄位。</td>
-          </tr>
-          <tr>
-            <td>年度排班引擎</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 16:08</td>
-            <td>已完成每月假日上班天數分配、下月順序推導、假日實際指派與全年資料模型。</td>
-          </tr>
-          <tr>
-            <td>年度摘要 Tab</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 16:22</td>
-            <td>已新增 1 到 12 月摘要、每月順序、值班天數、下月順序與覆寫入口。</td>
-          </tr>
-          <tr>
-            <td>單月月曆整合</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 16:30</td>
-            <td>已將單月月曆接上全年排班結果，顯示假日值班、週日例假與國定假日標記。</td>
-          </tr>
-          <tr>
-            <td>手動覆寫重算</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 16:45</td>
-            <td>已支援修改指定月份順序、還原自動承接，並從該月起重算後續月份。</td>
-          </tr>
-          <tr>
-            <td>驗證與收尾</td>
-            <td><span class="status done">已完成</span></td>
-            <td>2026-05-21 17:10</td>
-            <td>已完成假日上班天數、王宏榮排除規則、覆寫重算與頁面文案的最終檢查。</td>
-          </tr>
-        </tbody>
-      </table>
+    <section class="project-list" aria-label="計劃單列表">
+      <article class="project-card">
+        <header class="project-card__header">
+          <h2 class="project-card__title">goal.html 多計劃單置頂更新</h2>
+          <p class="project-card__meta">建立日期：2026-05-21 23:49｜狀態：已完成</p>
+          <p class="project-card__meta">用途：把 `goal.html` 從單一進度表升級成可排列多個計劃單的頁面，最新計劃固定排在最上方。</p>
+        </header>
+        <div class="project-card__body">
+          <table class="project-card__table">
+            <thead>
+              <tr>
+                <th style="width: 220px;">任務</th>
+                <th style="width: 120px;">狀態</th>
+                <th style="width: 180px;">完成時間</th>
+                <th>摘要</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>需求確認</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 23:49</td>
+                <td>確認 `goal.html` 要支援多個計劃單，且最新計劃要排在最上面。</td>
+              </tr>
+              <tr>
+                <td>頁面結構調整</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 23:49</td>
+                <td>將原本單一表格改為多計劃區塊架構，保留既有狀態、時間與摘要欄位。</td>
+              </tr>
+              <tr>
+                <td>SKILL 內容建立</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 23:49</td>
+                <td>之後會把這份回寫規則整理成可重複使用的 SKILL，讓進度頁自動更新。</td>
+              </tr>
+              <tr>
+                <td>測試流程驗證</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 23:49</td>
+                <td>以測試流程確認最新計劃單已完成，且頁面可持續新增並置頂後續計劃。</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="status-note">規則：只有狀態為「已完成」的任務才填寫完成時間；進行中與待處理一律顯示 `—`。</p>
+        </div>
+      </article>
+
+      <article class="project-card">
+        <header class="project-card__header">
+          <h2 class="project-card__title">年度假日值班排班整合計畫</h2>
+          <p class="project-card__meta">建立日期：2026-05-21 15:55｜狀態：既有計劃</p>
+          <p class="project-card__meta">用途：記錄年度假日值班排班功能的完整實作進度。</p>
+        </header>
+        <div class="project-card__body">
+          <table class="project-card__table">
+            <thead>
+              <tr>
+                <th style="width: 220px;">段落</th>
+                <th style="width: 120px;">狀態</th>
+                <th style="width: 180px;">完成時間</th>
+                <th>摘要</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>計畫檔</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 15:55</td>
+                <td>新增年度假日值班排班整合計畫，定義功能段落、commit 拆分與驗收條件。</td>
+              </tr>
+              <tr>
+                <td>goal.html 骨架</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 15:55</td>
+                <td>建立獨立進度頁，提供段落、狀態、時間與摘要欄位。</td>
+              </tr>
+              <tr>
+                <td>年度排班引擎</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 16:08</td>
+                <td>已完成每月假日上班天數分配、下月順序推導、假日實際指派與全年資料模型。</td>
+              </tr>
+              <tr>
+                <td>年度摘要 Tab</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 16:22</td>
+                <td>已新增 1 到 12 月摘要、每月順序、值班天數、下月順序與覆寫入口。</td>
+              </tr>
+              <tr>
+                <td>單月月曆整合</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 16:30</td>
+                <td>已將單月月曆接上全年排班結果，顯示假日值班、週日例假與國定假日標記。</td>
+              </tr>
+              <tr>
+                <td>手動覆寫重算</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 16:45</td>
+                <td>已支援修改指定月份順序、還原自動承接，並從該月起重算後續月份。</td>
+              </tr>
+              <tr>
+                <td>驗證與收尾</td>
+                <td><span class="status done">已完成</span></td>
+                <td>2026-05-21 17:10</td>
+                <td>已完成假日上班天數、王宏榮排除規則、覆寫重算與頁面文案的最終檢查。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
     </section>
   </div>
   <script>

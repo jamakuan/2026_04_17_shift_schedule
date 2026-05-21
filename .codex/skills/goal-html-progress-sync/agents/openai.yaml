@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal HTML Progress Sync"
+  short_description: "Sync plan progress into goal.html"
+  default_prompt: "Use $goal-html-progress-sync to keep goal.html updated with the latest plan progress, newest plan on top, and consistent completion times."
