@@ -663,6 +663,9 @@
       { employeeId: "2442", name: "彭盛寬", role: "employee" },
       { employeeId: "2191", name: "王宏榮", role: "employee" }
     ];
+    const quickUserOrder = new Map(
+      quickUsers.map((user, index) => [user.employeeId, index])
+    );
 
     const state = {
       apiBase: localStorage.getItem("apiBase") || "http://127.0.0.1:8000",
@@ -828,7 +831,21 @@
     }
 
     function monthParticipants() {
-      return state.monthData?.participants || [];
+      return [...(state.monthData?.participants || [])].sort((left, right) => {
+        const leftOrder = quickUserOrder.get(left.employee_id);
+        const rightOrder = quickUserOrder.get(right.employee_id);
+
+        if (leftOrder !== undefined && rightOrder !== undefined) {
+          return leftOrder - rightOrder;
+        }
+        if (leftOrder !== undefined) {
+          return -1;
+        }
+        if (rightOrder !== undefined) {
+          return 1;
+        }
+        return left.pick_order - right.pick_order;
+      });
     }
 
     function availableTargetParticipants() {
