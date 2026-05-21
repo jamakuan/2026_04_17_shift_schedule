@@ -135,6 +135,37 @@
       line-height: 1.6;
     }
 
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab-button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    .tab-button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
     .table-wrapper {
       margin-top: 16px;
       overflow-x: hidden;
@@ -290,7 +321,12 @@
       </div>
     </section>
 
-    <section class="panel">
+    <div class="tab-bar">
+      <button id="summaryTabButton" class="tab-button active" type="button">年度摘要</button>
+      <button id="detailTabButton" class="tab-button" type="button">單月月曆</button>
+    </div>
+
+    <section id="summaryPanel" class="panel tab-panel active">
       <h2 style="margin: 0 0 16px; font-size: 22px;">年度摘要</h2>
       <div style="overflow-x: auto;">
         <table style="width: 100%; min-width: 900px;">
@@ -308,7 +344,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section id="detailPanel" class="panel tab-panel">
       <h2 id="scheduleTitle" style="margin: 0 0 16px; font-size: 22px;">單月月曆</h2>
       <div id="tableWrapper" class="table-wrapper">
         <div id="tableScaleStage" class="table-scale-stage">
@@ -332,6 +368,10 @@
     const summaryDutyCounts = document.getElementById("summaryDutyCounts");
     const summaryNextOrder = document.getElementById("summaryNextOrder");
     const summaryTableBody = document.getElementById("summaryTableBody");
+    const summaryTabButton = document.getElementById("summaryTabButton");
+    const detailTabButton = document.getElementById("detailTabButton");
+    const summaryPanel = document.getElementById("summaryPanel");
+    const detailPanel = document.getElementById("detailPanel");
     const scheduleTitle = document.getElementById("scheduleTitle");
     const tableWrapper = document.getElementById("tableWrapper");
     const tableScaleStage = document.getElementById("tableScaleStage");
@@ -378,7 +418,8 @@
 
     const state = {
       currentYear: null,
-      yearData: []
+      yearData: [],
+      activeTab: "summary"
     };
 
     function formatDateKey(year, month, day) {
@@ -575,6 +616,10 @@
     }
 
     function updateTableScale() {
+      if (detailPanel.classList.contains("active") === false) {
+        return;
+      }
+
       tableScaleStage.style.height = "";
       scheduleTable.style.transform = "scale(1)";
 
@@ -588,6 +633,18 @@
       const scale = Math.min(1, availableWidth / tableWidth);
       scheduleTable.style.transform = `scale(${scale})`;
       tableScaleStage.style.height = `${Math.ceil(tableHeight * scale)}px`;
+    }
+
+    function setActiveTab(tabName) {
+      state.activeTab = tabName;
+      summaryTabButton.classList.toggle("active", tabName === "summary");
+      detailTabButton.classList.toggle("active", tabName === "detail");
+      summaryPanel.classList.toggle("active", tabName === "summary");
+      detailPanel.classList.toggle("active", tabName === "detail");
+
+      if (tabName === "detail") {
+        updateTableScale();
+      }
     }
 
     function renderSummary(record) {
@@ -703,6 +760,8 @@
     monthInput.addEventListener("input", renderMonthView);
     holidayToggle.addEventListener("change", renderMonthView);
     originalHolidayToggle.addEventListener("change", renderMonthView);
+    summaryTabButton.addEventListener("click", () => setActiveTab("summary"));
+    detailTabButton.addEventListener("click", () => setActiveTab("detail"));
     window.addEventListener("resize", updateTableScale);
 
     yearInput.value = "2026";
