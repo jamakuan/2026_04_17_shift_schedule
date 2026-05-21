@@ -1,461 +1,680 @@
+<!DOCTYPE html>
 <html lang="zh-Hant">
-	<head>
-		  <meta charset="UTF-8" />
-		    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		      <title>排班表標題產生器</title>
-		        <style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>排班表標題產生器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --line: #d1d5db;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #1d4ed8;
+      --accent-soft: #dbeafe;
+      --weekend: #333333;
+      --holiday: #f59e0b;
+      --duty: #1d4ed8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-	          font-family: Arial, "Microsoft JhengHei", sans-serif;
-		        padding: 40px;
-			      background: #f5f5f5;
-			          }
-
-        .container {
-		      max-width: 1400px;
-		            margin: 0 auto;
-			          background: #ffffff;
-				        padding: 24px;
-					      border-radius: 8px;
-					            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-						        }
-
-	    label {
-		          display: block;
-			        margin-top: 16px;
-				      font-weight: bold;
-				          }
-
-	        input {
-			      width: 100%;
-			            padding: 10px;
-				          margin-top: 6px;
-					        box-sizing: border-box;
-						      font-size: 16px;
-						          }
-
-		    .toggle-row {
-			          margin-top: 18px;
-				        display: flex;
-					      align-items: center;
-					            gap: 10px;
-							      font-weight: bold;
-						          }
-
-	        .toggle-row input {
-				      width: auto;
-				            margin: 0;
-					        }
-
-	    .toggle-row label {
-		          margin-top: 0;
-			        font-weight: bold;
-				      display: inline-flex;
-				      align-items: center;
-				        }
-
-	    .toggle-row .toggle-item {
-		          display: inline-flex;
-			        align-items: center;
-				      gap: 6px;
-				        }
-
-			    #scheduleTitle {
-				          margin-top: 28px;
-					        padding: 16px;
-						      background: #eef3ff;
-						            border-left: 4px solid #3366cc;
-							          font-size: 24px;
-								        font-weight: bold;
-									      display: none;
-									          }
-
-			        .table-wrapper {
-					      margin-top: 16px;
-					            overflow-x: auto;
-						          display: none;
-							      }
-
-				    table {
-					          width: max-content;
-						        border-collapse: collapse;
-							      table-layout: fixed;
-							            min-width: 100%;
-								        }
-
-				        td {
-						      border: 1px solid #999;
-						            text-align: center;
-							          padding: 10px 4px;
-								        font-size: 16px;
-									      font-weight: bold;
-									            background: #ffffff;
-										          vertical-align: middle;
-											        min-width: 36px;
-												      height: 28px;
-												          }
-
-					    .left-date-title {
-						          min-width: 142px;
-							        background: #ffffff;
-								      font-size: 16px;
-								          }
-
-					        .employee-id-header,
-						    .employee-id {
-							          min-width: 52px;
-								        width: 52px;
-									    }
-
-						        .employee-name-header,
-							    .employee-name {
-								          min-width: 90px;
-									        width: 90px;
-										    }
-
-							        .employee-id,
-								    .employee-name {
-									          font-weight: normal;
-										      }
-
-								        .schedule-input-cell {
-										      background: #ffffff;
-										          }
-
-									    .holiday-footer {
-										          margin-top: 12px;
-											        padding: 10px 12px;
-												      border-left: 4px solid #f59e0b;
-												            background: #fff7ed;
-													          font-size: 14px;
-														        line-height: 1.6;
-															      font-weight: bold;
-															            display: none;
-																        }
-
-									        .schedule-rules-footer {
-											      margin-top: 8px;
-											            padding: 10px 12px;
-												          border-left: 4px solid #666666;
-													        background: #f8f8f8;
-														      font-size: 14px;
-														            line-height: 1.7;
-															          display: none;
-																      }
-
-										    .schedule-rules-footer-title {
-											          font-weight: bold;
-												        margin-bottom: 2px;
-													    }
-
-										        .schedule-rules-footer ol {
-												      margin: 0;
-												            padding-left: 28px;
-													        }
-
-											    td.weekend {
-												          background: #333333;
-													        color: #ffffff;
-														    }
-
-											        td.national-holiday {
-													      background: #f59e0b;
-													            color: #111111;
-														        }
-												  </style>
-	</head>
-	<body>
-		  <div class="container">
-			      <h1>排班表標題產生器</h1>
-
-				          <label for="yearInput">年份</label>
-				      <input id="yearInput" type="number" placeholder="例如：2026" min="2026" />
-
-				          <label for="monthInput">月份</label>
-					      <input id="monthInput" type="number" placeholder="例如：5" min="1" max="12" />
-
-					          <div class="toggle-row">
-							        <span class="toggle-item">
-							        <input id="holidayToggle" type="checkbox" checked />
-								      <label for="holidayToggle">顯示國定假日橘色標記</label>
-								          </span>
-								          <span class="toggle-item">
-								        <input id="originalHolidayToggle" type="checkbox" />
-								      <label for="originalHolidayToggle">原始假日</label>
-								          </span>
-								          </div>
-
-									      <div id="scheduleTitle"></div>
-
-									          <div id="tableWrapper" class="table-wrapper">
-											        <table>
-													        <tbody id="scheduleTableBody"></tbody>
-														      </table>
-														            <div id="holidayFooter" class="holiday-footer"></div>
-															          <div id="scheduleRulesFooter" class="schedule-rules-footer">
-																	          <div class="schedule-rules-footer-title">排班方式：</div>
-																		          <ol>
-																				            <li>如有需要調整，請與其他排班人員協調，協調完畢再通知經理進行更新</li>
-																					              <li>平日上班限制1人，國定假日視情況而定</li>
-																						                <li>每兩週需排定2天例假，每四週例假+休息日至少8天，不得連續工作超過12日</li>
-																								        </ol>
-																									      </div>
-																									          </div>
-																										    </div>
-
-																										      <script>
-																												      const yearInput = document.getElementById("yearInput");
-																												      const monthInput = document.getElementById("monthInput");
-																												      const holidayToggle = document.getElementById("holidayToggle");
-																												      const originalHolidayToggle = document.getElementById("originalHolidayToggle");
-																												      const scheduleTitle = document.getElementById("scheduleTitle");
-																												      const tableWrapper = document.getElementById("tableWrapper");
-																												      const scheduleTableBody = document.getElementById("scheduleTableBody");
-																												      const holidayFooter = document.getElementById("holidayFooter");
-																												      const scheduleRulesFooter = document.getElementById("scheduleRulesFooter");
-
-																												      const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
-
-																												      const employees = [
-																													            { id: "2191", name: "王宏榮" },
-																													            { id: "2196", name: "鍾靜怡" },
-																													            { id: "2138", name: "許芷嘉" },
-																													            { id: "2318", name: "黃柏瑜" },
-																													            { id: "2442", name: "彭盛寬" }
-																													          ];
-
-																												      // 目前年份從 2026 開始支援。
-																												      // 台灣 2026 年政府行政機關辦公日曆表假日資料。
-																												      // 2026 以前年份暫不支援。
-																												      const nationalHolidays = {
-																													            "2026-01-01": "開國紀念日",
-																													            "2026-02-15": "小年夜",
-																													            "2026-02-16": "農曆除夕",
-																													            "2026-02-17": "春節",
-																													            "2026-02-18": "春節",
-																													            "2026-02-19": "春節",
-																													            "2026-02-20": "補假",
-																													            "2026-02-27": "補假",
-																													            "2026-02-28": "和平紀念日",
-																													            "2026-04-03": "補假",
-																													            "2026-04-04": "兒童節",
-																													            "2026-04-05": "清明節",
-																													            "2026-04-06": "補假",
-																													            "2026-05-01": "勞動節",
-																													            "2026-06-19": "端午節",
-																													            "2026-09-25": "中秋節",
-																													            "2026-09-28": "孔子誕辰紀念日 / 教師節",
-																													            "2026-10-09": "補假",
-																													            "2026-10-10": "國慶日",
-																													            "2026-10-25": "臺灣光復暨金門古寧頭大捷紀念日",
-																													            "2026-10-26": "補假",
-																													            "2026-12-25": "行憲紀念日"
-																													          };
-
-																												      function getDaysInMonth(year, month) {
-																													            return new Date(year, month, 0).getDate();
-																													          }
-
-																												      function formatDateKey(year, month, day) {
-																													            const monthText = String(month).padStart(2, "0");
-																													            const dayText = String(day).padStart(2, "0");
-																													            return `${year}-${monthText}-${dayText}`;
-																													          }
-
-																												      function isWeekend(year, month, day) {
-																													            const weekday = new Date(year, month - 1, day).getDay();
-																													            return weekday === 0 || weekday === 6;
-																													          }
-
-																												      function isNationalHoliday(year, month, day) {
-																													            const dateKey = formatDateKey(year, month, day);
-																													            return Object.prototype.hasOwnProperty.call(nationalHolidays, dateKey);
-																													          }
-
-																												      function getHolidayName(year, month, day) {
-																													            const dateKey = formatDateKey(year, month, day);
-																													            return nationalHolidays[dateKey] || "";
-																													          }
-
-																												      function getWeekdayName(year, month, day) {
-																													            const weekday = new Date(year, month - 1, day).getDay();
-																													            return weekdayNames[weekday];
-																													          }
-
-																												      function createCell(text, cellType, holidayName = "") {
-																													            const cell = document.createElement("td");
-																													            cell.textContent = text;
-
-																													            if (cellType === "nationalHoliday") {
-																															            cell.classList.add("national-holiday");
-																															            cell.title = holidayName;
-																															          }
-
-																													            if (cellType === "weekend") {
-																															            cell.classList.add("weekend");
-																															          }
-
-																													            return cell;
-																													          }
-
-																												      function getEmployeeCellDisplay(year, month, day) {
-																													            if (!originalHolidayToggle.checked) {
-																															            return "";
-																															          }
-
-																													            const weekday = new Date(year, month - 1, day).getDay();
-
-																													            if (weekday === 0) {
-																															            return "例";
-																															          }
-
-																													            if (weekday === 6 || isNationalHoliday(year, month, day)) {
-																															            return "休";
-																															          }
-
-																													            return "";
-																													          }
-
-																												      function createLeftDateTitleCell() {
-																													            const cell = document.createElement("td");
-																													            cell.classList.add("left-date-title");
-																													            cell.colSpan = 2;
-																													            cell.textContent = "日期";
-																													            return cell;
-																													          }
-
-																												      function createEmployeeHeaderRow() {
-																													            const row = document.createElement("tr");
-
-																													            const employeeIdHeader = document.createElement("td");
-																													            employeeIdHeader.classList.add("employee-id-header");
-																													            employeeIdHeader.textContent = "員編";
-
-																													            const employeeNameHeader = document.createElement("td");
-																													            employeeNameHeader.classList.add("employee-name-header");
-																													            employeeNameHeader.textContent = "姓名/星期";
-
-																													            row.appendChild(employeeIdHeader);
-																													            row.appendChild(employeeNameHeader);
-
-																													            return row;
-																													          }
-
-																												      function createEmployeeRow(employee, year, month, daysInMonth) {
-																													            const row = document.createElement("tr");
-
-																													            const employeeIdCell = document.createElement("td");
-																													            employeeIdCell.classList.add("employee-id");
-																													            employeeIdCell.textContent = employee.id;
-
-																													            const employeeNameCell = document.createElement("td");
-																													            employeeNameCell.classList.add("employee-name");
-																													            employeeNameCell.textContent = employee.name;
-
-																													            row.appendChild(employeeIdCell);
-																													            row.appendChild(employeeNameCell);
-
-																													            for (let day = 1; day <= daysInMonth; day++) {
-																															            const cellType = getCellType(year, month, day);
-																															            const holidayName = getHolidayName(year, month, day);
-																															            const scheduleCell = document.createElement("td");
-																															            scheduleCell.classList.add("schedule-input-cell");
-																															            scheduleCell.textContent = getEmployeeCellDisplay(year, month, day);
-
-																															            if (cellType === "nationalHoliday") {
-																																	              scheduleCell.classList.add("national-holiday");
-																																	              scheduleCell.title = holidayName;
-																																	            }
-
-																															            if (cellType === "weekend") {
-																																	              scheduleCell.classList.add("weekend");
-																																	            }
-
-																															            row.appendChild(scheduleCell);
-																															          }
-
-																													            return row;
-																													          }
-
-																												      function getCellType(year, month, day) {
-																													            const shouldShowNationalHoliday = holidayToggle.checked;
-
-																													            if (shouldShowNationalHoliday && isNationalHoliday(year, month, day)) {
-																															            return "nationalHoliday";
-																															          }
-
-																													            if (isWeekend(year, month, day)) {
-																															            return "weekend";
-																															          }
-
-																													            return "normal";
-																													          }
-
-																												      function updateScheduleTitle() {
-																													            const year = Number(yearInput.value);
-																													            const month = Number(monthInput.value);
-																													            const isValidYear = Number.isInteger(year) && year >= 2026;
-																													            const isValidMonth = Number.isInteger(month) && month >= 1 && month <= 12;
-
-																													            if (!isValidYear || !isValidMonth) {
-																															            scheduleTitle.textContent = "";
-																															            scheduleTitle.style.display = "none";
-																															            tableWrapper.style.display = "none";
-																															            scheduleTableBody.innerHTML = "";
-																															            holidayFooter.textContent = "";
-																															            holidayFooter.style.display = "none";
-																															            scheduleRulesFooter.style.display = "none";
-																															            return;
-																															          }
-
-																													            scheduleTitle.textContent = `${year}年${month}月排班表`;
-																													            scheduleTitle.style.display = "block";
-																													            tableWrapper.style.display = "block";
-
-																													            const daysInMonth = getDaysInMonth(year, month);
-																													            const dateRow = document.createElement("tr");
-																													            const weekdayRow = createEmployeeHeaderRow();
-																													            const holidayNotes = [];
-
-																													            dateRow.appendChild(createLeftDateTitleCell());
-
-																													            for (let day = 1; day <= daysInMonth; day++) {
-																															            const cellType = getCellType(year, month, day);
-																															            const holidayName = getHolidayName(year, month, day);
-
-																															            if (holidayToggle.checked && cellType === "nationalHoliday") {
-																																	              holidayNotes.push(`${month}/${day} ${holidayName}`);
-																																	            }
-
-																															            dateRow.appendChild(createCell(day, cellType, holidayName));
-																															            weekdayRow.appendChild(createCell(getWeekdayName(year, month, day), cellType, holidayName));
-																															          }
-
-																													            scheduleTableBody.innerHTML = "";
-
-																													            scheduleTableBody.appendChild(dateRow);
-																													            scheduleTableBody.appendChild(weekdayRow);
-
-																													            employees.forEach((employee) => {
-																															            scheduleTableBody.appendChild(createEmployeeRow(employee, year, month, daysInMonth));
-																															          });
-
-																													            if (holidayToggle.checked && holidayNotes.length > 0) {
-																															            holidayFooter.textContent = `國定假日：${holidayNotes.join("、")}`;
-																															            holidayFooter.style.display = "block";
-																															          } else {
-																																	          holidayFooter.textContent = "";
-																																	          holidayFooter.style.display = "none";
-																																	        }
-
-																													            scheduleRulesFooter.style.display = "block";
-																													          }
-
-																												      yearInput.addEventListener("input", updateScheduleTitle);
-																												      monthInput.addEventListener("input", updateScheduleTitle);
-																												      holidayToggle.addEventListener("change", updateScheduleTitle);
-																												      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
-																												    </script>
-	</body>
+      margin: 0;
+      padding: 32px 20px 48px;
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .control-grid,
+    .summary-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .control-grid {
+      grid-template-columns: 180px 180px 1fr;
+      align-items: end;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 16px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #ffffff;
+      min-height: 92px;
+    }
+
+    .summary-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .summary-value {
+      line-height: 1.7;
+      font-weight: bold;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      font: inherit;
+    }
+
+    .toggle-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      padding-bottom: 2px;
+    }
+
+    .toggle-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .toggle-item input {
+      width: auto;
+      margin: 0;
+    }
+
+    .note-bar {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      background: #f9fafb;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .table-wrapper {
+      margin-top: 16px;
+      overflow-x: hidden;
+      display: none;
+    }
+
+    .table-scale-stage {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      transform-origin: left top;
+    }
+
+    td {
+      border: 1px solid #999;
+      text-align: center;
+      padding: 10px 4px;
+      font-size: 16px;
+      font-weight: bold;
+      background: #ffffff;
+      vertical-align: middle;
+      min-width: 36px;
+      height: 28px;
+    }
+
+    .left-date-title {
+      min-width: 142px;
+      background: #ffffff;
+      font-size: 16px;
+    }
+
+    .employee-id-header,
+    .employee-id {
+      min-width: 52px;
+      width: 52px;
+    }
+
+    .employee-name-header,
+    .employee-name {
+      min-width: 90px;
+      width: 90px;
+    }
+
+    .employee-id,
+    .employee-name {
+      font-weight: normal;
+    }
+
+    .holiday-footer,
+    .schedule-rules-footer {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      line-height: 1.7;
+      display: none;
+    }
+
+    .holiday-footer {
+      border-left: 4px solid var(--holiday);
+      background: #fff7ed;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .schedule-rules-footer {
+      border-left: 4px solid #666666;
+      background: #f8f8f8;
+      font-size: 14px;
+    }
+
+    td.weekend {
+      background: var(--weekend);
+      color: #ffffff;
+    }
+
+    td.national-holiday {
+      background: var(--holiday);
+      color: #111111;
+    }
+
+    td.duty-day {
+      background: var(--duty);
+      color: #ffffff;
+    }
+
+    @media (max-width: 1100px) {
+      .control-grid,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="panel">
+      <h1>排班表標題產生器</h1>
+      <p>先建立年度假日值班分配邏輯，將每月假日上班天數轉成 4 人值班天數與下月順序。</p>
+    </section>
+
+    <section class="panel">
+      <div class="control-grid">
+        <div>
+          <label for="yearInput">年份</label>
+          <input id="yearInput" type="number" min="2026" placeholder="例如：2026" />
+        </div>
+        <div>
+          <label for="monthInput">月份</label>
+          <input id="monthInput" type="number" min="1" max="12" placeholder="例如：5" />
+        </div>
+        <div>
+          <label>顯示選項</label>
+          <div class="toggle-group">
+            <label class="toggle-item" for="holidayToggle">
+              <input id="holidayToggle" type="checkbox" checked />
+              顯示國定假日橘色標記
+            </label>
+            <label class="toggle-item" for="originalHolidayToggle">
+              <input id="originalHolidayToggle" type="checkbox" checked />
+              顯示原始假日與休假標記
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="note-bar">
+        首月固定順序：鍾靜怡 → 許芷嘉 → 黃柏瑜 → 彭盛寬。週日全員休假，王宏榮假日固定休息，不參與假日值班分配。週六與週一到週五的國定假日都需安排 1 人上班。
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-card">
+          <span class="summary-label">本月假日上班天數</span>
+          <div id="summaryDutyDayCount" class="summary-value">-</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">本月排班順序</span>
+          <div id="summaryCurrentOrder" class="summary-value">-</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">本月假日上班次數</span>
+          <div id="summaryDutyCounts" class="summary-value">-</div>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label">下個月順序</span>
+          <div id="summaryNextOrder" class="summary-value">-</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 id="scheduleTitle" style="margin: 0 0 16px; font-size: 22px;">單月月曆</h2>
+      <div id="tableWrapper" class="table-wrapper">
+        <div id="tableScaleStage" class="table-scale-stage">
+          <table id="scheduleTable">
+            <tbody id="scheduleTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="holidayFooter" class="holiday-footer"></div>
+      <div id="scheduleRulesFooter" class="schedule-rules-footer"></div>
+    </section>
+  </div>
+
+  <script>
+    const yearInput = document.getElementById("yearInput");
+    const monthInput = document.getElementById("monthInput");
+    const holidayToggle = document.getElementById("holidayToggle");
+    const originalHolidayToggle = document.getElementById("originalHolidayToggle");
+    const summaryDutyDayCount = document.getElementById("summaryDutyDayCount");
+    const summaryCurrentOrder = document.getElementById("summaryCurrentOrder");
+    const summaryDutyCounts = document.getElementById("summaryDutyCounts");
+    const summaryNextOrder = document.getElementById("summaryNextOrder");
+    const scheduleTitle = document.getElementById("scheduleTitle");
+    const tableWrapper = document.getElementById("tableWrapper");
+    const tableScaleStage = document.getElementById("tableScaleStage");
+    const scheduleTable = document.getElementById("scheduleTable");
+    const scheduleTableBody = document.getElementById("scheduleTableBody");
+    const holidayFooter = document.getElementById("holidayFooter");
+    const scheduleRulesFooter = document.getElementById("scheduleRulesFooter");
+
+    const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
+    const employees = [
+      { id: "2191", name: "王宏榮", holidayFixedOff: true },
+      { id: "2196", name: "鍾靜怡", holidayFixedOff: false },
+      { id: "2138", name: "許芷嘉", holidayFixedOff: false },
+      { id: "2318", name: "黃柏瑜", holidayFixedOff: false },
+      { id: "2442", name: "彭盛寬", holidayFixedOff: false }
+    ];
+    const dutyEmployeeNames = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
+    const initialDutyOrder = [...dutyEmployeeNames];
+
+    const nationalHolidays = {
+      "2026-01-01": "開國紀念日",
+      "2026-02-15": "小年夜",
+      "2026-02-16": "農曆除夕",
+      "2026-02-17": "春節",
+      "2026-02-18": "春節",
+      "2026-02-19": "春節",
+      "2026-02-20": "補假",
+      "2026-02-27": "補假",
+      "2026-02-28": "和平紀念日",
+      "2026-04-03": "補假",
+      "2026-04-04": "兒童節",
+      "2026-04-05": "清明節",
+      "2026-04-06": "補假",
+      "2026-05-01": "勞動節",
+      "2026-06-19": "端午節",
+      "2026-09-25": "中秋節",
+      "2026-09-28": "孔子誕辰紀念日 / 教師節",
+      "2026-10-09": "補假",
+      "2026-10-10": "國慶日",
+      "2026-10-25": "臺灣光復暨金門古寧頭大捷紀念日",
+      "2026-10-26": "補假",
+      "2026-12-25": "行憲紀念日"
+    };
+
+    const state = {
+      currentYear: null,
+      yearData: []
+    };
+
+    function formatDateKey(year, month, day) {
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+
+    function getDaysInMonth(year, month) {
+      return new Date(year, month, 0).getDate();
+    }
+
+    function getWeekday(year, month, day) {
+      return new Date(year, month - 1, day).getDay();
+    }
+
+    function isSunday(year, month, day) {
+      return getWeekday(year, month, day) === 0;
+    }
+
+    function isSaturday(year, month, day) {
+      return getWeekday(year, month, day) === 6;
+    }
+
+    function isNationalHoliday(year, month, day) {
+      return Object.prototype.hasOwnProperty.call(nationalHolidays, formatDateKey(year, month, day));
+    }
+
+    function getHolidayName(year, month, day) {
+      return nationalHolidays[formatDateKey(year, month, day)] || "";
+    }
+
+    function getCellType(year, month, day) {
+      if (holidayToggle.checked && isNationalHoliday(year, month, day)) {
+        return "nationalHoliday";
+      }
+
+      if (isSaturday(year, month, day) || isSunday(year, month, day)) {
+        return "weekend";
+      }
+
+      return "normal";
+    }
+
+    function isDutyHoliday(year, month, day) {
+      if (isSunday(year, month, day)) {
+        return false;
+      }
+
+      if (isSaturday(year, month, day)) {
+        return true;
+      }
+
+      return isNationalHoliday(year, month, day);
+    }
+
+    function getDutyDates(year, month) {
+      const dutyDates = [];
+      const totalDays = getDaysInMonth(year, month);
+      for (let day = 1; day <= totalDays; day += 1) {
+        if (isDutyHoliday(year, month, day)) {
+          dutyDates.push(day);
+        }
+      }
+      return dutyDates;
+    }
+
+    function createDutyCounts(order, dutyDayCount) {
+      const base = Math.floor(dutyDayCount / order.length);
+      const remainder = dutyDayCount % order.length;
+      const dutyCounts = {};
+
+      order.forEach((name, index) => {
+        dutyCounts[name] = base + (index < remainder ? 1 : 0);
+      });
+
+      return dutyCounts;
+    }
+
+    function assignDutyDates(order, dutyCounts, dutyDates) {
+      const assignmentByDay = {};
+      let cursor = 0;
+
+      order.forEach((name) => {
+        for (let index = 0; index < dutyCounts[name]; index += 1) {
+          const day = dutyDates[cursor];
+          if (day !== undefined) {
+            assignmentByDay[day] = name;
+          }
+          cursor += 1;
+        }
+      });
+
+      return assignmentByDay;
+    }
+
+    function getNextOrder(order, dutyCounts) {
+      return [...order].sort((nameA, nameB) => {
+        if (dutyCounts[nameA] !== dutyCounts[nameB]) {
+          return dutyCounts[nameA] - dutyCounts[nameB];
+        }
+        return order.indexOf(nameA) - order.indexOf(nameB);
+      });
+    }
+
+    function generateYearData(year) {
+      const records = [];
+      let carryOrder = [...initialDutyOrder];
+
+      for (let month = 1; month <= 12; month += 1) {
+        const dutyDates = getDutyDates(year, month);
+        const dutyCounts = createDutyCounts(carryOrder, dutyDates.length);
+        const assignmentByDay = assignDutyDates(carryOrder, dutyCounts, dutyDates);
+        const nextOrder = getNextOrder(carryOrder, dutyCounts);
+
+        records.push({
+          month,
+          order: [...carryOrder],
+          dutyDates,
+          dutyCounts,
+          assignmentByDay,
+          nextOrder
+        });
+
+        carryOrder = nextOrder;
+      }
+
+      return records;
+    }
+
+    function getMonthRecord(month) {
+      return state.yearData.find((record) => record.month === month) || null;
+    }
+
+    function createCell(text, classNames = [], title = "") {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      classNames.forEach((name) => cell.classList.add(name));
+      if (title) {
+        cell.title = title;
+      }
+      return cell;
+    }
+
+    function createLeftDateTitleCell() {
+      const cell = document.createElement("td");
+      cell.classList.add("left-date-title");
+      cell.colSpan = 2;
+      cell.textContent = "日期";
+      return cell;
+    }
+
+    function createEmployeeHeaderRow() {
+      const row = document.createElement("tr");
+      row.appendChild(createCell("員編", ["employee-id-header"]));
+      row.appendChild(createCell("姓名/星期", ["employee-name-header"]));
+      return row;
+    }
+
+    function getEmployeeCellDisplay(employee, record, day) {
+      const classNames = ["schedule-input-cell"];
+      const cellType = getCellType(state.currentYear, record.month, day);
+      const assignedName = record.assignmentByDay[day] || "";
+      let text = "";
+
+      if (cellType === "nationalHoliday") {
+        classNames.push("national-holiday");
+      } else if (cellType === "weekend") {
+        classNames.push("weekend");
+      }
+
+      if (assignedName === employee.name) {
+        classNames.push("duty-day");
+        text = "班";
+      } else if (isSunday(state.currentYear, record.month, day)) {
+        text = originalHolidayToggle.checked ? "例" : "";
+      } else if (isSaturday(state.currentYear, record.month, day) || isNationalHoliday(state.currentYear, record.month, day)) {
+        text = originalHolidayToggle.checked ? "休" : "";
+      }
+
+      return { text, classNames };
+    }
+
+    function createEmployeeRow(employee, record) {
+      const row = document.createElement("tr");
+      row.appendChild(createCell(employee.id, ["employee-id"]));
+      row.appendChild(createCell(employee.name, ["employee-name"]));
+
+      const daysInMonth = getDaysInMonth(state.currentYear, record.month);
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const meta = getEmployeeCellDisplay(employee, record, day);
+        row.appendChild(createCell(meta.text, meta.classNames, getHolidayName(state.currentYear, record.month, day)));
+      }
+
+      return row;
+    }
+
+    function updateTableScale() {
+      tableScaleStage.style.height = "";
+      scheduleTable.style.transform = "scale(1)";
+
+      const availableWidth = tableWrapper.clientWidth;
+      const tableWidth = scheduleTable.offsetWidth;
+      const tableHeight = scheduleTable.offsetHeight;
+      if (availableWidth === 0 || tableWidth === 0 || tableHeight === 0) {
+        return;
+      }
+
+      const scale = Math.min(1, availableWidth / tableWidth);
+      scheduleTable.style.transform = `scale(${scale})`;
+      tableScaleStage.style.height = `${Math.ceil(tableHeight * scale)}px`;
+    }
+
+    function renderSummary(record) {
+      summaryDutyDayCount.textContent = `${record.dutyDates.length} 天`;
+      summaryCurrentOrder.innerHTML = record.order.join(" → ");
+      summaryDutyCounts.innerHTML = record.order.map((name) => `${name} ${record.dutyCounts[name]} 天`).join("<br>");
+      summaryNextOrder.innerHTML = record.nextOrder.join(" → ");
+    }
+
+    function renderHolidayFooter(record) {
+      const holidayNotes = [];
+      const daysInMonth = getDaysInMonth(state.currentYear, record.month);
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        if (holidayToggle.checked && isNationalHoliday(state.currentYear, record.month, day)) {
+          holidayNotes.push(`${record.month}/${day} ${getHolidayName(state.currentYear, record.month, day)}`);
+        }
+      }
+
+      if (holidayNotes.length > 0) {
+        holidayFooter.style.display = "block";
+        holidayFooter.textContent = `國定假日：${holidayNotes.join("、")}`;
+      } else {
+        holidayFooter.style.display = "none";
+        holidayFooter.textContent = "";
+      }
+    }
+
+    function renderRulesFooter(record) {
+      scheduleRulesFooter.style.display = "block";
+      scheduleRulesFooter.innerHTML = `
+        <div><strong>本月排班順序：</strong>${record.order.join(" → ")}</div>
+        <div><strong>本月假日上班次數：</strong>${record.order.map((name) => `${name} ${record.dutyCounts[name]} 天`).join("、")}</div>
+        <div><strong>下個月順序：</strong>${record.nextOrder.join(" → ")}</div>
+      `;
+    }
+
+    function renderMonthView() {
+      const year = Number(yearInput.value);
+      const month = Number(monthInput.value);
+      const isValidYear = Number.isInteger(year) && year >= 2026;
+      const isValidMonth = Number.isInteger(month) && month >= 1 && month <= 12;
+
+      if (!isValidYear || !isValidMonth) {
+        scheduleTitle.textContent = "單月月曆";
+        summaryDutyDayCount.textContent = "-";
+        summaryCurrentOrder.textContent = "-";
+        summaryDutyCounts.textContent = "-";
+        summaryNextOrder.textContent = "-";
+        tableWrapper.style.display = "none";
+        scheduleTableBody.innerHTML = "";
+        holidayFooter.style.display = "none";
+        scheduleRulesFooter.style.display = "none";
+        return;
+      }
+
+      state.currentYear = year;
+      state.yearData = generateYearData(year);
+      const record = getMonthRecord(month);
+      if (!record) {
+        return;
+      }
+
+      renderSummary(record);
+      scheduleTitle.textContent = `${year}年${month}月排班表`;
+      tableWrapper.style.display = "block";
+
+      const daysInMonth = getDaysInMonth(year, month);
+      const dateRow = document.createElement("tr");
+      const weekdayRow = createEmployeeHeaderRow();
+      dateRow.appendChild(createLeftDateTitleCell());
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const cellType = getCellType(year, month, day);
+        const classNames = [];
+        const holidayName = getHolidayName(year, month, day);
+        if (cellType === "nationalHoliday") {
+          classNames.push("national-holiday");
+        } else if (cellType === "weekend") {
+          classNames.push("weekend");
+        }
+
+        dateRow.appendChild(createCell(String(day), classNames, holidayName));
+        weekdayRow.appendChild(createCell(weekdayNames[getWeekday(year, month, day)], classNames, holidayName));
+      }
+
+      scheduleTableBody.innerHTML = "";
+      scheduleTableBody.appendChild(dateRow);
+      scheduleTableBody.appendChild(weekdayRow);
+      employees.forEach((employee) => {
+        scheduleTableBody.appendChild(createEmployeeRow(employee, record));
+      });
+
+      renderHolidayFooter(record);
+      renderRulesFooter(record);
+      updateTableScale();
+    }
+
+    yearInput.addEventListener("input", renderMonthView);
+    monthInput.addEventListener("input", renderMonthView);
+    holidayToggle.addEventListener("change", renderMonthView);
+    originalHolidayToggle.addEventListener("change", renderMonthView);
+    window.addEventListener("resize", updateTableScale);
+
+    yearInput.value = "2026";
+    monthInput.value = "5";
+    renderMonthView();
+  </script>
+</body>
 </html>
-
-
