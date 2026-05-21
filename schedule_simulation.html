@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>班表優先權分配模擬器與對話紀錄</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: rgba(17, 24, 39, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-indigo: #6366f1;
+      --accent-violet: #8b5cf6;
+      --accent-violet-glow: rgba(139, 92, 246, 0.15);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Outfit', 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1.5rem;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a5b4fc 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      margin-top: 0.75rem;
+    }
+
+    /* Tab styles */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 500;
+      padding: 0.5rem 1.5rem;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards & Layouts */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 2fr 3fr;
+      }
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 0.5rem;
+      color: #e0e7ff;
+    }
+
+    /* Rules listing */
+    .rules-list {
+      list-style-type: none;
+    }
+
+    .rules-list li {
+      margin-bottom: 1rem;
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    .rules-list li::before {
+      content: "✦";
+      position: absolute;
+      left: 0;
+      color: var(--accent-indigo);
+      font-weight: bold;
+    }
+
+    .formula {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-family: monospace;
+      margin: 0.5rem 0;
+      border-left: 3px solid var(--accent-violet);
+    }
+
+    /* Interactive Simulator */
+    .control-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 0.6rem;
+      width: 80px;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    input[type="range"] {
+      flex-grow: 1;
+      accent-color: var(--accent-indigo);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+      width: 100%;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      margin-top: 0.5rem;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Simulation Output */
+    .sim-panel {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 1.25rem;
+      border: 1px solid var(--card-border);
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+
+    .status-label {
+      color: var(--text-muted);
+    }
+
+    .status-value {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .arrow-seq {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+
+    .arrow-seq span {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--card-border);
+    }
+
+    .arrow-seq-next span {
+      background: var(--accent-violet-glow);
+      border-color: rgba(139, 92, 246, 0.4);
+      color: #d8b4fe;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      text-align: center;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      border: 1px solid var(--card-border);
+    }
+
+    th {
+      background-color: rgba(99, 102, 241, 0.1);
+      color: #a5b4fc;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+
+    .highlight-extra {
+      background-color: rgba(245, 158, 11, 0.15) !important;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fdba74;
+    }
+
+    .highlight-less {
+      background-color: rgba(16, 185, 129, 0.15) !important;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #6ee7b7;
+    }
+
+    /* History table */
+    .history-container {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+
+    /* Examples Tab */
+    .examples-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .examples-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .examples-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .example-card {
+      background: rgba(17, 24, 39, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .example-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .example-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .example-title {
+      font-weight: 700;
+      color: var(--accent-indigo);
+    }
+
+    .example-days {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .example-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.75rem;
+    }
+
+    .example-table {
+      margin: 0.5rem 0;
+    }
+
+    .example-table th, .example-table td {
+      padding: 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    /* Chat Log Tab */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding: 1rem 0;
+    }
+
+    .chat-bubble {
+      display: flex;
+      gap: 1rem;
+      max-width: 85%;
+    }
+
+    .chat-bubble.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .chat-bubble.assistant {
+      align-self: flex-start;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-violet));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+    }
+
+    .chat-bubble.user .avatar {
+      background: #4b5563;
+    }
+
+    .chat-bubble-content {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .chat-bubble.user .chat-bubble-content {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .chat-bubble-content p {
+      margin-bottom: 0.75rem;
+    }
+
+    .chat-bubble-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .chat-bubble-content pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.75rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: monospace;
+      margin: 0.5rem 0;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>班表優先權分配模擬器與對話紀錄</h1>
+    <p>排班分配邏輯紀錄、互動模擬工具與歷程存檔</p>
+    <div class="badge">最後更新時間：2026-05-20</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('simulation')">互動模擬器</button>
+    <button class="tab-btn" onclick="switchTab('examples')">10個範例展示</button>
+    <button class="tab-btn" onclick="switchTab('dialogue')">對話歷程紀錄</button>
+  </div>
+
+  <!-- TAB: Simulation -->
+  <div id="simulation" class="tab-content active">
+    <div class="grid">
+      <!-- Rules & Control Card -->
+      <div>
+        <div class="card">
+          <div class="card-title">⚙️ 規則設定與控制</div>
+          <ul class="rules-list">
+            <li>
+              <strong>天數分配</strong>：
+              <div class="formula">
+                每人基本天數 = 該月隨機天數 ÷ 4 (無條件捨去)<br>
+                餘數部分 = 隨機天數 % 4
+              </div>
+              餘數天數（0至3天）會以 1 天為單位，依照<strong>當月選擇順序</strong>由前往後依次多分配 1 天。
+            </li>
+            <li>
+              <strong>下個月優先順序決定</strong>：
+              <div class="formula">
+                排序鍵：(當月所得天數, 當月原排序位置)
+              </div>
+              本月<strong>天數拿較少</strong>的人會被排到最前面。若天數相同，則本月<strong>順序在前面</strong>的人先排。
+            </li>
+          </ul>
+
+          <div style="border-top: 1px solid var(--card-border); margin: 1.5rem 0;"></div>
+
+          <div class="control-group">
+            <label for="days-input">選擇當月隨機天數 (4 ~ 10 天)：</label>
+            <div class="input-row">
+              <input type="range" id="days-slider" min="4" max="10" value="7" oninput="syncDays(this.value)">
+              <input type="number" id="days-number" min="4" max="10" value="7" oninput="syncDays(this.value)">
+            </div>
+          </div>
+
+          <button class="btn" onclick="runSimStep()">模擬此月份分配</button>
+          <button class="btn btn-secondary" onclick="resetSim()">重設模擬 (回到 ABCD)</button>
+        </div>
+      </div>
+
+      <!-- Live Screen -->
+      <div>
+        <div class="card" style="height: 100%;">
+          <div class="card-title">📊 模擬執行結果</div>
+          
+          <div class="sim-panel">
+            <div class="status-item">
+              <span class="status-label">當前月份</span>
+              <span class="status-value" id="current-month-lbl">第 1 個月</span>
+            </div>
+            
+            <div class="status-item">
+              <span class="status-label">本月選擇順序</span>
+              <div class="arrow-seq" id="current-seq-lbl">
+                <span>A</span> → <span>B</span> → <span>C</span> → <span>D</span>
+              </div>
+            </div>
+
+            <div class="status-item">
+              <span class="status-label">輸入天數</span>
+              <span class="status-value" id="current-days-lbl">7 天 (除以 4 = 1，餘 3)</span>
+            </div>
+
+            <div style="margin: 1rem 0;">
+              <span class="status-label" style="display: block; margin-bottom: 0.5rem;">當月分配結果：</span>
+              <table id="distribution-table">
+                <thead>
+                  <tr id="table-head-row">
+                    <th>A</th>
+                    <th>B</th>
+                    <th>C</th>
+                    <th>D</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr id="table-body-row">
+                    <td>1 天</td>
+                    <td>1 天</td>
+                    <td>1 天</td>
+                    <td>1 天</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="status-item" style="border: none; margin-top: 1rem; padding-bottom: 0;">
+              <span class="status-label">下個月順序</span>
+              <div class="arrow-seq arrow-seq-next" id="next-seq-lbl">
+                <span>D</span> → <span>A</span> → <span>B</span> → <span>C</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.5rem;">
+            <h4 style="color: #a5b4fc; margin-bottom: 0.5rem; font-size: 1rem;">歷史紀錄：</h4>
+            <div class="history-container">
+              <table style="margin: 0; font-size: 0.85rem;" id="history-table">
+                <thead>
+                  <tr>
+                    <th>月份</th>
+                    <th>隨機天數</th>
+                    <th>原順序</th>
+                    <th>分配結果</th>
+                    <th>下月順序</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Filled dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: 10 Examples -->
+  <div id="examples" class="tab-content">
+    <div class="card">
+      <div class="card-title">📖 10 個月份連續演練範例展示</div>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+        此為依照您的規則，連續跑 10 個月隨機天數（4~10天）得到的順序分配結果。可用作開發或邏輯校對的測資。
+      </p>
+
+      <div class="examples-grid">
+        <!-- Month 1 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 1 個月</span>
+            <span class="example-days">9 天 (餘 1)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">3 天</td>
+              <td>2 天</td>
+              <td>2 天</td>
+              <td>2 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：B, C, D, A<br>
+            <span style="color: var(--success)">* 餘數 1 天分給 A。B, C, D 拿較少排前面。</span>
+          </div>
+        </div>
+
+        <!-- Month 2 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 2 個月</span>
+            <span class="example-days">4 天 (餘 0)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+              <th>A</th>
+            </tr>
+            <tr>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：B, C, D, A<br>
+            <span style="color: var(--text-muted)">* 天數皆為 1 天，故完全保留原順序。</span>
+          </div>
+        </div>
+
+        <!-- Month 3 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 3 個月</span>
+            <span class="example-days">4 天 (餘 0)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+              <th>A</th>
+            </tr>
+            <tr>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：B, C, D, A<br>
+            <span style="color: var(--text-muted)">* 天數皆為 1 天，故完全保留原順序。</span>
+          </div>
+        </div>
+
+        <!-- Month 4 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 4 個月</span>
+            <span class="example-days">9 天 (餘 1)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+              <th>A</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">3 天</td>
+              <td>2 天</td>
+              <td>2 天</td>
+              <td>2 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：C, D, A, B<br>
+            <span style="color: var(--success)">* 餘數 1 天分給 B。C, D, A 拿較少排前面。</span>
+          </div>
+        </div>
+
+        <!-- Month 5 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 5 個月</span>
+            <span class="example-days">6 天 (餘 2)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>C</th>
+              <th>D</th>
+              <th>A</th>
+              <th>B</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">2 天</td>
+              <td class="highlight-extra">2 天</td>
+              <td class="highlight-less">1 天</td>
+              <td class="highlight-less">1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：A, B, C, D<br>
+            <span style="color: var(--success)">* A, B 拿 1 天較少排前；C, D 拿 2 天較多排後。</span>
+          </div>
+        </div>
+
+        <!-- Month 6 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 6 個月</span>
+            <span class="example-days">5 天 (餘 1)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">2 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：B, C, D, A<br>
+            <span style="color: var(--success)">* 餘數 1 天分給 A。B, C, D 較少排前面。</span>
+          </div>
+        </div>
+
+        <!-- Month 7 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 7 個月</span>
+            <span class="example-days">5 天 (餘 1)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+              <th>A</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">2 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：C, D, A, B<br>
+            <span style="color: var(--success)">* 餘數分給 B。C, D, A 較少排前面。</span>
+          </div>
+        </div>
+
+        <!-- Month 8 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 8 個月</span>
+            <span class="example-days">5 天 (餘 1)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>C</th>
+              <th>D</th>
+              <th>A</th>
+              <th>B</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">2 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：D, A, B, C<br>
+            <span style="color: var(--success)">* 餘數分給 C。D, A, B 較少排前面。</span>
+          </div>
+        </div>
+
+        <!-- Month 9 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 9 個月</span>
+            <span class="example-days">9 天 (餘 1)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>D</th>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+            </tr>
+            <tr>
+              <td class="highlight-extra">3 天</td>
+              <td>2 天</td>
+              <td>2 天</td>
+              <td>2 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：A, B, C, D<br>
+            <span style="color: var(--success)">* 餘數分給 D。A, B, C 較少排前面。</span>
+          </div>
+        </div>
+
+        <!-- Month 10 -->
+        <div class="example-card">
+          <div class="example-header">
+            <span class="example-title">第 10 個月</span>
+            <span class="example-days">4 天 (餘 0)</span>
+          </div>
+          <table class="example-table">
+            <tr>
+              <th>A</th>
+              <th>B</th>
+              <th>C</th>
+              <th>D</th>
+            </tr>
+            <tr>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+              <td>1 天</td>
+            </tr>
+          </table>
+          <div class="example-info">
+            <strong>下月順序</strong>：A, B, C, D<br>
+            <span style="color: var(--text-muted)">* 天數皆為 1 天，故完全保留原順序。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Dialogue Log -->
+  <div id="dialogue" class="tab-content">
+    <div class="card">
+      <div class="card-title">💬 本次對話歷程存檔</div>
+      
+      <div class="chat-container">
+        <!-- Message 1 -->
+        <div class="chat-bubble user">
+          <div class="avatar">用</div>
+          <div class="chat-bubble-content">
+            <p>每個月有隨機4天~10天要給4個人選擇，每個月每個人的選擇順序也會有差別，天數的分配方式是除以4，餘數再照該月順序以1天為單位從第一個開始分配。下個月的順序是天數少與前面順序的人會被排到第一個位置，以 ABCD 四個人為例子，列出十個範例讓我看一下</p>
+          </div>
+        </div>
+
+        <!-- Assistant Response 1 -->
+        <div class="chat-bubble assistant">
+          <div class="avatar">AI</div>
+          <div class="chat-bubble-content">
+            <p>為您解釋排班的規則與計算流程：</p>
+            <p>1. <strong>分配規則</strong>：將隨機天數除以 4。每人得到基本天數。餘數為 R，從當月選擇順序的第一個位置開始，每人額外分配 1 天，分完為止。</p>
+            <p>2. <strong>下月排序</strong>：依照「當月分配天數較少」排最前面，若天數相同則依「當月原本順序較前」排前面。</p>
+            <p>提供 10 個月份的連貫演練範例表，顯示順序是如何隨著每個月的分配結果而動態改變的。</p>
+          </div>
+        </div>
+
+        <!-- Message 2 -->
+        <div class="chat-bubble user">
+          <div class="avatar">用</div>
+          <div class="chat-bubble-content">
+            <p>用表格讓我好理解一點</p>
+          </div>
+        </div>
+
+        <!-- Assistant Response 2 -->
+        <div class="chat-bubble assistant">
+          <div class="avatar">AI</div>
+          <div class="chat-bubble-content">
+            <p>重新整理了更詳細的表格，呈現了隨機天數、餘數加給誰、每人的最終天數分配以及下個月順序的推導依據。</p>
+          </div>
+        </div>
+
+        <!-- Message 3 -->
+        <div class="chat-bubble user">
+          <div class="avatar">用</div>
+          <div class="chat-bubble-content">
+            <p>表格上面是人 下面是天數 會有10個分開的表格當作範例展示給我看</p>
+          </div>
+        </div>
+
+        <!-- Assistant Response 3 -->
+        <div class="chat-bubble assistant">
+          <div class="avatar">AI</div>
+          <div class="chat-bubble-content">
+            <p>已為您提供 10 個獨立表格，表格上方為人員，下方為其分配到的天數。這十個範例能清楚展示當月天數與下月排班順序的動態邏輯關係。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tab Switch logic
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+
+  // Simulation Logic
+  let currentSeq = ['A', 'B', 'C', 'D'];
+  let monthCount = 1;
+  const historyList = [];
+
+  function syncDays(val) {
+    document.getElementById('days-slider').value = val;
+    document.getElementById('days-number').value = val;
+  }
+
+  function resetSim() {
+    currentSeq = ['A', 'B', 'C', 'D'];
+    monthCount = 1;
+    historyList.length = 0;
+    
+    document.getElementById('history-table').querySelector('tbody').innerHTML = '';
+    document.getElementById('current-month-lbl').innerText = '第 1 個月';
+    updateSeqUI('current-seq-lbl', currentSeq);
+    
+    // reset output UI values to default
+    document.getElementById('current-days-lbl').innerText = '-';
+    document.getElementById('next-seq-lbl').innerHTML = '-';
+    
+    // reset table
+    const headRow = document.getElementById('table-head-row');
+    const bodyRow = document.getElementById('table-body-row');
+    headRow.innerHTML = '<th>A</th><th>B</th><th>C</th><th>D</th>';
+    bodyRow.innerHTML = '<td>-</td><td>-</td><td>-</td><td>-</td>';
+  }
+
+  function updateSeqUI(elementId, seq, highlightIndices = []) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = seq.map((p, idx) => {
+      const highlightClass = highlightIndices.includes(idx) ? 'class="highlight-extra"' : '';
+      return `<span ${highlightClass}>${p}</span>`;
+    }).join(' → ');
+  }
+
+  function runSimStep() {
+    const days = parseInt(document.getElementById('days-number').value);
+    const base = Math.floor(days / 4);
+    const remainder = days % 4;
+    
+    // Calculate allocation
+    const assigned = {};
+    const extraIndices = [];
+    currentSeq.forEach((person, idx) => {
+      const hasExtra = idx < remainder;
+      if (hasExtra) extraIndices.push(idx);
+      assigned[person] = base + (hasExtra ? 1 : 0);
+    });
+
+    // Sort key: (assigned_days, original_index_in_current_seq)
+    const nextSeq = [...currentSeq].sort((p1, p2) => {
+      if (assigned[p1] !== assigned[p2]) {
+        return assigned[p1] - assigned[p2]; // fewer days first
+      }
+      return currentSeq.indexOf(p1) - currentSeq.indexOf(p2); // maintain relative order
+    });
+
+    // Update UI elements
+    document.getElementById('current-month-lbl').innerText = `第 ${monthCount} 個月`;
+    updateSeqUI('current-seq-lbl', currentSeq, extraIndices);
+    document.getElementById('current-days-lbl').innerText = `${days} 天 (除以 4 = ${base}，餘 ${remainder})`;
+
+    // Fill Distribution Table
+    const headRow = document.getElementById('table-head-row');
+    const bodyRow = document.getElementById('table-body-row');
+    
+    headRow.innerHTML = currentSeq.map((p, idx) => {
+      const isExtra = idx < remainder;
+      return `<th class="${isExtra ? 'highlight-extra' : ''}">${p}</th>`;
+    }).join('');
+    
+    bodyRow.innerHTML = currentSeq.map((p, idx) => {
+      const isExtra = idx < remainder;
+      return `<td class="${isExtra ? 'highlight-extra' : ''}">${assigned[p]} 天</td>`;
+    }).join('');
+
+    updateSeqUI('next-seq-lbl', nextSeq);
+    document.getElementById('next-seq-lbl').classList.add('arrow-seq-next');
+
+    // Add to history
+    const distStr = currentSeq.map(p => `${p}:${assigned[p]}天`).join(', ');
+    const historyRow = document.createElement('tr');
+    historyRow.innerHTML = `
+      <td>第 ${monthCount} 個月</td>
+      <td>${days} 天 (餘 ${remainder})</td>
+      <td>${currentSeq.join(' → ')}</td>
+      <td>${distStr}</td>
+      <td>${nextSeq.join(' → ')}</td>
+    `;
+    
+    const tbody = document.getElementById('history-table').querySelector('tbody');
+    tbody.insertBefore(historyRow, tbody.firstChild);
+
+    // Save history item
+    historyList.push({
+      month: monthCount,
+      days: days,
+      seq: [...currentSeq],
+      assigned: assigned,
+      nextSeq: nextSeq
+    });
+
+    // Set state for next step
+    currentSeq = nextSeq;
+    monthCount++;
+  }
+
+  // Initialize
+  resetSim();
+</script>
+
+</body>
+</html>
