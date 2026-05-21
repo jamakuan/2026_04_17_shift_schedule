@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 from sqlalchemy import delete, select
@@ -39,6 +39,12 @@ def reset_month(year: int, month: int) -> None:
         session.execute(delete(AuditLog).where(AuditLog.schedule_month_id == schedule_month.id))
         session.delete(schedule_month)
         session.commit()
+
+
+def login_headers(client: TestClient, employee_id: str) -> dict[str, str]:
+    response = client.post("/login", json={"employee_id": employee_id})
+    assert response.status_code == 200
+    return {"X-Session-Token": response.json()["token"]}
 
 
 def complete_initial_picks(client: TestClient, headers: dict[str, str], year: int, month: int) -> dict:
@@ -84,16 +90,34 @@ def complete_initial_picks(client: TestClient, headers: dict[str, str], year: in
     return client.get(f"/months/{year}/{month}", headers=headers).json()
 
 
+def build_save_payload(month_payload: dict) -> dict:
+    return {
+        "version_number": month_payload["latest_version_number"],
+        "override_mode": False,
+        "holiday_assignments": month_payload["assignments"]["holiday"],
+        "comp_assignments": {
+            date_key: list(employee_ids)
+            for date_key, employee_ids in month_payload["assignments"]["comp"].items()
+        },
+        "capacities": {item["date"]: item["capacity"] for item in month_payload["comp_dates"]},
+        "pending_carryovers": [
+            {
+                "employee_id": item["employee_id"],
+                "source_holiday_date": item["source_holiday_date"],
+                "requested_target_month": item["requested_target_month"],
+            }
+            for item in month_payload["carryovers"]
+        ],
+    }
+
+
 def test_full_schedule_flow() -> None:
     year = 2099
     month = 1
     reset_month(year, month)
 
     with TestClient(app) as client:
-        login = client.post("/login", json={"employee_id": "2196"})
-        assert login.status_code == 200
-        token = login.json()["token"]
-        headers = {"X-Session-Token": token}
+        headers = login_headers(client, "2196")
 
         month_payload = complete_initial_picks(client, headers, year, month)
         assert month_payload["latest_version_number"] == 1
@@ -104,28 +128,9 @@ def test_full_schedule_flow() -> None:
         assert open_review.json()["status"] == "review_open"
 
         refreshed_month = client.get(f"/months/{year}/{month}", headers=headers).json()
-        holiday_assignments = refreshed_month["assignments"]["holiday"]
-        comp_assignments = defaultdict(list, refreshed_month["assignments"]["comp"])
-        capacities = {item["date"]: item["capacity"] for item in refreshed_month["comp_dates"]}
-        pending_carryovers = [
-            {
-                "employee_id": item["employee_id"],
-                "source_holiday_date": item["source_holiday_date"],
-                "requested_target_month": item["requested_target_month"],
-            }
-            for item in refreshed_month["carryovers"]
-        ]
-
         save_response = client.post(
             f"/months/{year}/{month}/assignments/save",
-            json={
-                "version_number": refreshed_month["latest_version_number"],
-                "override_mode": False,
-                "holiday_assignments": holiday_assignments,
-                "comp_assignments": comp_assignments,
-                "capacities": capacities,
-                "pending_carryovers": pending_carryovers,
-            },
+            json=build_save_payload(refreshed_month),
             headers=headers,
         )
         assert save_response.status_code == 200
@@ -151,3 +156,99 @@ def test_full_schedule_flow() -> None:
         action_types = [item["action_type"] for item in logs.json()["items"]]
         assert "login" in action_types
         assert "save_assignments" in action_types
+
+
+def test_review_deadline_blocks_employee_edits_after_expiry() -> None:
+    year = 2099
+    month = 2
+    reset_month(year, month)
+
+    with TestClient(app) as client:
+        admin_headers = login_headers(client, "2196")
+        employee_headers = login_headers(client, "2138")
+
+        complete_initial_picks(client, admin_headers, year, month)
+        past_deadline = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+        open_review = client.post(
+            f"/months/{year}/{month}/review-window/open",
+            json={"review_deadline": past_deadline},
+            headers=admin_headers,
+        )
+        assert open_review.status_code == 200
+
+        employee_month = client.get(f"/months/{year}/{month}", headers=employee_headers)
+        assert employee_month.status_code == 200
+        employee_payload = employee_month.json()
+        assert employee_payload["review_deadline_expired"] is True
+        assert employee_payload["permissions"]["can_edit_all"] is False
+
+        employee_save = client.post(
+            f"/months/{year}/{month}/assignments/save",
+            json=build_save_payload(employee_payload),
+            headers=employee_headers,
+        )
+        assert employee_save.status_code == 403
+        assert employee_save.json()["detail"] == "已超過修改截止時間，只有管理者可修改"
+
+        admin_month = client.get(f"/months/{year}/{month}", headers=admin_headers).json()
+        admin_save = client.post(
+            f"/months/{year}/{month}/assignments/save",
+            json=build_save_payload(admin_month),
+            headers=admin_headers,
+        )
+        assert admin_save.status_code == 200
+
+
+def test_save_rejects_carryover_source_from_other_employee() -> None:
+    year = 2099
+    month = 10
+    reset_month(year, month)
+
+    with TestClient(app) as client:
+        headers = login_headers(client, "2196")
+
+        complete_initial_picks(client, headers, year, month)
+        open_review = client.post(f"/months/{year}/{month}/review-window/open", json={}, headers=headers)
+        assert open_review.status_code == 200
+
+        month_payload = client.get(f"/months/{year}/{month}", headers=headers).json()
+        payload = build_save_payload(month_payload)
+        target_participant = next(
+            item
+            for item in month_payload["participants"]
+            if item["employee_id"] == "2196"
+        )
+        payload["comp_assignments"] = dict(payload["comp_assignments"])
+        removed_comp_date = target_participant["comp_dates"][0]
+        payload["comp_assignments"][removed_comp_date] = [
+            employee_id
+            for employee_id in payload["comp_assignments"][removed_comp_date]
+            if employee_id != target_participant["employee_id"]
+        ]
+        if not payload["comp_assignments"][removed_comp_date]:
+            payload["comp_assignments"].pop(removed_comp_date)
+
+        payload["pending_carryovers"].append(
+            {
+                "employee_id": target_participant["employee_id"],
+                "source_holiday_date": "2099-10-17",
+                "requested_target_month": None,
+            }
+        )
+
+        save_response = client.post(
+            f"/months/{year}/{month}/assignments/save",
+            json=payload,
+            headers=headers,
+        )
+        assert save_response.status_code == 422
+        assert save_response.json()["detail"] == "跨月待處理來源值班日必須屬於該員工"
+
+
+def test_start_picking_rejects_invalid_month() -> None:
+    with TestClient(app, raise_server_exceptions=False) as client:
+        headers = login_headers(client, "2196")
+        response = client.post("/months/2026/13/start-picking", json={}, headers=headers)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "月份必須介於 1 到 12"

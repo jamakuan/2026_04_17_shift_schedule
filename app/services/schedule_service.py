@@ -89,6 +89,13 @@ def next_year_month(year: int, month: int) -> tuple[int, int]:
     return year, month + 1
 
 
+def validate_year_month(year: int, month: int) -> None:
+    if year < 1:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="年份必須大於 0")
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="月份必須介於 1 到 12")
+
+
 def get_days_in_month(year: int, month: int) -> int:
     return calendar.monthrange(year, month)[1]
 
@@ -268,6 +275,7 @@ def compute_next_order_from_previous_month(
 
 
 def create_month_if_missing(db: Session, year: int, month: int, actor_id: str) -> ScheduleMonth:
+    validate_year_month(year, month)
     schedule_month = db.scalar(
         select(ScheduleMonth).where(
             ScheduleMonth.year == year,
@@ -372,6 +380,15 @@ def log_action(
         db.commit()
 
 
+def is_review_deadline_expired(schedule_month: ScheduleMonth) -> bool:
+    deadline = schedule_month.review_deadline
+    if deadline is None:
+        return False
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=UTC)
+    return datetime.now(UTC) > deadline
+
+
 def month_summary(
     db: Session,
     schedule_month: ScheduleMonth,
@@ -442,6 +459,7 @@ def month_summary(
         )
 
     version_exists = schedule_month.latest_version_number > 0
+    review_deadline_expired = is_review_deadline_expired(schedule_month)
     return {
         "year": schedule_month.year,
         "month": schedule_month.month,
@@ -449,6 +467,7 @@ def month_summary(
         "current_picker_id": schedule_month.current_picker_id,
         "current_picker_name": current_picker_name,
         "review_deadline": schedule_month.review_deadline.isoformat() if schedule_month.review_deadline else None,
+        "review_deadline_expired": review_deadline_expired,
         "latest_version_number": schedule_month.latest_version_number,
         "participants": participant_payload,
         "holiday_dates": [
@@ -485,7 +504,13 @@ def month_summary(
                 )
             ),
             "can_edit_all": bool(
-                schedule_month.status == "review_open"
+                (
+                    schedule_month.status == "review_open"
+                    and (
+                        current_user.role == "admin"
+                        or not review_deadline_expired
+                    )
+                )
                 or (schedule_month.status == "locked" and current_user.role == "admin")
             ),
             "can_manage_month": current_user.role == "admin",
@@ -881,6 +906,12 @@ def save_review_assignments(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="鎖定後只有管理者可修改")
     if schedule_month.status not in {"review_open", "locked"}:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="目前不在可編輯月份階段")
+    if (
+        schedule_month.status == "review_open"
+        and is_review_deadline_expired(schedule_month)
+        and actor.role != "admin"
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="已超過修改截止時間，只有管理者可修改")
     if schedule_month.latest_version_number != version_number:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="版本已過期，請重新載入最新資料")
     if override_mode and actor.role != "admin":
@@ -941,6 +972,11 @@ def save_review_assignments(
         ordered_holidays = sorted_date_list(holiday_by_user[user_id])
         ordered_comp_dates = sorted_date_list(comp_by_user[user_id])
         user_carryovers = carryover_by_user[user_id]
+        if not set(user_carryovers).issubset(set(ordered_holidays)):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="跨月待處理來源值班日必須屬於該員工",
+            )
         validate_pick_dates(ordered_holidays, ordered_comp_dates, len(user_carryovers))
         if not override_mode:
             if len(ordered_holidays) != participant_map[user_id].holiday_quota:
