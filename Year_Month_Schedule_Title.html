@@ -60,6 +60,22 @@ CTYPE html>
 				      gap: 6px;
 				        }
 
+	    .toggle-button {
+		          border: 1px solid #3366cc;
+			        border-radius: 999px;
+				      background: #ffffff;
+				            color: #3366cc;
+					          font: inherit;
+						        font-weight: bold;
+							      padding: 8px 14px;
+								    cursor: pointer;
+								        }
+
+	    .toggle-button.active {
+		          background: #3366cc;
+			        color: #ffffff;
+				      }
+
 			    #scheduleTitle {
 				          margin-top: 28px;
 					        padding: 16px;
@@ -183,6 +199,7 @@ CTYPE html>
 								        <input id="originalHolidayToggle" type="checkbox" />
 								      <label for="originalHolidayToggle">原始假日</label>
 								          </span>
+								          <button id="originalPaperButton" class="toggle-button" type="button">原始紙</button>
 								          </div>
 
 									      <div id="scheduleTitle"></div>
@@ -208,11 +225,13 @@ CTYPE html>
 																												      const monthInput = document.getElementById("monthInput");
 																												      const holidayToggle = document.getElementById("holidayToggle");
 																												      const originalHolidayToggle = document.getElementById("originalHolidayToggle");
+																												      const originalPaperButton = document.getElementById("originalPaperButton");
 																												      const scheduleTitle = document.getElementById("scheduleTitle");
 																												      const tableWrapper = document.getElementById("tableWrapper");
 																												      const scheduleTableBody = document.getElementById("scheduleTableBody");
 																												      const holidayFooter = document.getElementById("holidayFooter");
 																												      const scheduleRulesFooter = document.getElementById("scheduleRulesFooter");
+																												      let originalPaperModeEnabled = false;
 
 																												      const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -298,18 +317,37 @@ CTYPE html>
 																													            return cell;
 																													          }
 
-																												      function getEmployeeCellDisplay(year, month, day) {
+																												      function getEmployeeCellDisplay(employee, year, month, day) {
+																													            const weekday = new Date(year, month - 1, day).getDay();
+																													            const isSunday = weekday === 0;
+																													            const isSaturday = weekday === 6;
+																													            const isNational = isNationalHoliday(year, month, day);
+
+																													            if (originalPaperModeEnabled) {
+																															            if (isSunday) {
+																																	              return "例";
+																																	            }
+
+																															            if (isNational) {
+																																	              return "休";
+																																	            }
+
+																															            if (isSaturday) {
+																																	              return employee && employee.name === "王宏榮" ? "休" : "";
+																																	            }
+
+																															            return "";
+																															          }
+
 																													            if (!originalHolidayToggle.checked) {
 																															            return "";
 																															          }
 
-																													            const weekday = new Date(year, month - 1, day).getDay();
-
-																													            if (weekday === 0) {
+																													            if (isSunday) {
 																															            return "例";
 																															          }
 
-																													            if (weekday === 6 || isNationalHoliday(year, month, day)) {
+																													            if (isSaturday || isNationalHoliday(year, month, day)) {
 																															            return "休";
 																															          }
 
@@ -360,7 +398,7 @@ CTYPE html>
 																															            const holidayName = getHolidayName(year, month, day);
 																															            const scheduleCell = document.createElement("td");
 																															            scheduleCell.classList.add("schedule-input-cell");
-																															            scheduleCell.textContent = getEmployeeCellDisplay(year, month, day);
+																															            scheduleCell.textContent = getEmployeeCellDisplay(employee, year, month, day);
 
 																															            if (cellType === "nationalHoliday") {
 																																	              scheduleCell.classList.add("national-holiday");
@@ -455,8 +493,11 @@ CTYPE html>
 																												      monthInput.addEventListener("input", updateScheduleTitle);
 																												      holidayToggle.addEventListener("change", updateScheduleTitle);
 																												      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
+																												      originalPaperButton.addEventListener("click", () => {
+																													            originalPaperModeEnabled = !originalPaperModeEnabled;
+																													            originalPaperButton.classList.toggle("active", originalPaperModeEnabled);
+																													            updateScheduleTitle();
+																													          });
 																												    </script>
 	</body>
 </html>
-
-
