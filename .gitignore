@@ -10,3 +10,5 @@ venv/
 *.log
 *.tmp
 *.bak
+shift_schedule.egg-info/
+test-results/
