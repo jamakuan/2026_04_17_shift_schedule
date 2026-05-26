@@ -1,24 +1,29 @@
-CTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
-	<head>
+		<head>
 		  <meta charset="UTF-8" />
 		    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		      <title>排班表標題產生器</title>
 		        <style>
+    * {
+	          box-sizing: border-box;
+	          }
+
     body {
 	          font-family: Arial, "Microsoft JhengHei", sans-serif;
-		        padding: 40px;
+		        margin: 0;
+		        padding: clamp(12px, 1.8vw, 24px);
 			      background: #f5f5f5;
 			          }
 
         .container {
-		      max-width: 1400px;
+		      max-width: 1800px;
 		            margin: 0 auto;
-			          background: #ffffff;
-				        padding: 24px;
-					      border-radius: 8px;
-					            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-						        }
+				          background: #ffffff;
+				        padding: clamp(12px, 1.5vw, 20px);
+						      border-radius: 8px;
+						            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+							        }
 
 	    label {
 		          display: block;
@@ -86,57 +91,60 @@ CTYPE html>
 									      display: none;
 									          }
 
-			        .table-wrapper {
-					      margin-top: 16px;
-					            overflow-x: auto;
-						          display: none;
-							      }
+				        .table-wrapper {
+						      margin-top: 16px;
+						            overflow-x: auto;
+							          display: none;
+								      }
 
-				    table {
-					          width: max-content;
-						        border-collapse: collapse;
-							      table-layout: fixed;
-							            min-width: 100%;
-								        }
+					    table {
+						          width: 100%;
+							        border-collapse: collapse;
+								      table-layout: fixed;
+								            min-width: 0;
+									        }
 
-				        td {
-						      border: 1px solid #999;
-						            text-align: center;
-							          padding: 10px 4px;
-								        font-size: 16px;
-									      font-weight: bold;
-									            background: #ffffff;
-										          vertical-align: middle;
-											        min-width: 36px;
-												      height: 28px;
-												          }
+					        td {
+							      border: 1px solid #999;
+							            text-align: center;
+								          padding: 8px 2px;
+									        font-size: 14px;
+										      font-weight: bold;
+										            background: #ffffff;
+											          vertical-align: middle;
+												        min-width: 0;
+													      height: 28px;
+													      line-height: 1.2;
+													          }
 
-					    .left-date-title {
-						          min-width: 142px;
-							        background: #ffffff;
-								      font-size: 16px;
-								          }
+						    .left-date-title {
+							          width: 120px;
+								        background: #ffffff;
+									      font-size: 15px;
+									          }
 
-					        .employee-id-header,
+						        .employee-id-header,
 						    .employee-id {
-							          min-width: 52px;
-								        width: 52px;
-									    }
-
-						        .employee-name-header,
-							    .employee-name {
-								          min-width: 90px;
-									        width: 90px;
+								          width: 48px;
 										    }
 
-							        .employee-id,
+							        .employee-name-header,
 								    .employee-name {
-									          font-weight: normal;
-										      }
+									          width: 84px;
+											    }
 
-								        .schedule-input-cell {
-										      background: #ffffff;
-										          }
+								        .employee-id,
+									    .employee-name {
+										          font-weight: normal;
+											      }
+
+									        .day-cell {
+										          width: auto;
+											      }
+
+									        .schedule-input-cell {
+											      background: #ffffff;
+											          }
 
 									    .holiday-footer {
 										          margin-top: 12px;
@@ -174,11 +182,40 @@ CTYPE html>
 													        color: #ffffff;
 														    }
 
-											        td.national-holiday {
-													      background: #f59e0b;
-													            color: #111111;
-														        }
-												  </style>
+												        td.national-holiday {
+														      background: #f59e0b;
+														            color: #111111;
+															    }
+
+    @media (max-width: 1366px) {
+	          body {
+		        padding: 10px;
+		      }
+
+		      .container {
+			        padding: 12px;
+			      }
+
+			      td {
+				        padding: 7px 1px;
+					      font-size: 13px;
+					    }
+
+					    .left-date-title {
+						      width: 108px;
+						          }
+
+					      .employee-id-header,
+					      .employee-id {
+						        width: 44px;
+						            }
+
+					        .employee-name-header,
+					        .employee-name {
+							      width: 76px;
+							          }
+	        }
+							  </style>
 	</head>
 	<body>
 		  <div class="container">
@@ -301,9 +338,10 @@ CTYPE html>
 																													            return weekdayNames[weekday];
 																													          }
 
-																												      function createCell(text, cellType, holidayName = "") {
-																													            const cell = document.createElement("td");
-																													            cell.textContent = text;
+																													      function createCell(text, cellType, holidayName = "") {
+																														            const cell = document.createElement("td");
+																														            cell.classList.add("day-cell");
+																														            cell.textContent = text;
 
 																													            if (cellType === "nationalHoliday") {
 																															            cell.classList.add("national-holiday");
@@ -396,9 +434,9 @@ CTYPE html>
 																													            for (let day = 1; day <= daysInMonth; day++) {
 																															            const cellType = getCellType(year, month, day);
 																															            const holidayName = getHolidayName(year, month, day);
-																															            const scheduleCell = document.createElement("td");
-																															            scheduleCell.classList.add("schedule-input-cell");
-																															            scheduleCell.textContent = getEmployeeCellDisplay(employee, year, month, day);
+																																            const scheduleCell = document.createElement("td");
+																																            scheduleCell.classList.add("schedule-input-cell", "day-cell");
+																																            scheduleCell.textContent = getEmployeeCellDisplay(employee, year, month, day);
 
 																															            if (cellType === "nationalHoliday") {
 																																	              scheduleCell.classList.add("national-holiday");
@@ -429,7 +467,7 @@ CTYPE html>
 																													            return "normal";
 																													          }
 
-																												      function updateScheduleTitle() {
+																													      function updateScheduleTitle() {
 																													            const year = Number(yearInput.value);
 																													            const month = Number(monthInput.value);
 																													            const isValidYear = Number.isInteger(year) && year >= 2026;
@@ -478,26 +516,74 @@ CTYPE html>
 																															            scheduleTableBody.appendChild(createEmployeeRow(employee, year, month, daysInMonth));
 																															          });
 
-																													            if (holidayToggle.checked && holidayNotes.length > 0) {
-																															            holidayFooter.textContent = `國定假日：${holidayNotes.join("、")}`;
-																															            holidayFooter.style.display = "block";
+																														            if (holidayToggle.checked && holidayNotes.length > 0) {
+																																            holidayFooter.textContent = `國定假日：${holidayNotes.join("、")}`;
+																																            holidayFooter.style.display = "block";
 																															          } else {
 																																	          holidayFooter.textContent = "";
 																																	          holidayFooter.style.display = "none";
 																																	        }
 
-																													            scheduleRulesFooter.style.display = "block";
-																													          }
+																														            scheduleRulesFooter.style.display = "block";
+																														            updateLayoutReport();
+																														          }
 
-																												      yearInput.addEventListener("input", updateScheduleTitle);
-																												      monthInput.addEventListener("input", updateScheduleTitle);
-																												      holidayToggle.addEventListener("change", updateScheduleTitle);
-																												      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
-																												      originalPaperButton.addEventListener("click", () => {
-																													            originalPaperModeEnabled = !originalPaperModeEnabled;
-																													            originalPaperButton.classList.toggle("active", originalPaperModeEnabled);
-																													            updateScheduleTitle();
-																													          });
-																												    </script>
+																													      function updateLayoutReport() {
+																														            const params = new URLSearchParams(window.location.search);
+
+																														            if (params.get("reportLayout") !== "1") {
+																																            return;
+																																          }
+
+																														            const existingReport = document.getElementById("layoutReport");
+																														            const report = existingReport || document.createElement("pre");
+																														            const month = Number(monthInput.value);
+																														            const daysInMonth = Number.isInteger(month) && month >= 1 && month <= 12
+																																            ? getDaysInMonth(Number(yearInput.value), month)
+																																            : 0;
+																														            const payload = {
+																																            clientWidth: tableWrapper.clientWidth,
+																																            scrollWidth: tableWrapper.scrollWidth,
+																																            hasHorizontalScroll: tableWrapper.scrollWidth > tableWrapper.clientWidth,
+																																            renderedDayCount: daysInMonth,
+																																            lastDayLabel: scheduleTableBody.querySelector("tr:first-child td:last-child")?.textContent || ""
+																																          };
+
+																														            report.id = "layoutReport";
+																														            report.hidden = true;
+																														            report.textContent = JSON.stringify(payload);
+
+																														            if (!existingReport) {
+																																            document.body.appendChild(report);
+																																          }
+																														          }
+
+																													      function applyInitialValuesFromUrl() {
+																														            const params = new URLSearchParams(window.location.search);
+																														            const yearParam = params.get("year");
+																														            const monthParam = params.get("month");
+
+																														            if (yearParam !== null) {
+																																            yearInput.value = yearParam;
+																																          }
+
+																														            if (monthParam !== null) {
+																																            monthInput.value = monthParam;
+																																          }
+
+																														            updateScheduleTitle();
+																														          }
+
+																													      yearInput.addEventListener("input", updateScheduleTitle);
+																													      monthInput.addEventListener("input", updateScheduleTitle);
+																													      holidayToggle.addEventListener("change", updateScheduleTitle);
+																													      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
+																													      originalPaperButton.addEventListener("click", () => {
+																														            originalPaperModeEnabled = !originalPaperModeEnabled;
+																														            originalPaperButton.classList.toggle("active", originalPaperModeEnabled);
+																														            updateScheduleTitle();
+																														          });
+																													      applyInitialValuesFromUrl();
+																													    </script>
 	</body>
 </html>
