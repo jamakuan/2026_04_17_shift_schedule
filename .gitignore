@@ -11,3 +11,4 @@ venv/
 *.log
 *.tmp
 *.bak
+.git_known_hosts
