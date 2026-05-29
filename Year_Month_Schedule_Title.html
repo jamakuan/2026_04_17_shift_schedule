@@ -215,6 +215,146 @@
 							      width: 76px;
 							          }
 	        }
+
+/* 選班模式相關樣式 */
+body.select-duty-mode-active .duty-selectable {
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+body.select-duty-mode-active .duty-selectable:hover {
+  background-color: #e0e7ff !important;
+  box-shadow: inset 0 0 0 2px #3366cc;
+}
+
+.duty-stats-card {
+  margin-top: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  max-width: 480px;
+  margin-left: auto;
+  display: none;
+}
+
+body.select-duty-mode-active .duty-stats-card {
+  display: block;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.duty-stats-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.duty-stats-summary {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 16px;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.duty-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.duty-member-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.duty-member-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.duty-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.duty-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.duty-progress-fill.normal {
+  background: linear-gradient(90deg, #3366cc, #6366f1);
+}
+
+.duty-progress-fill.completed {
+  background: #10b981;
+}
+
+.duty-progress-fill.exceeded {
+  background: #ef4444;
+}
+
+.duty-seq-flow {
+  font-size: 14px;
+  background: #f1f5f9;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #334155;
+  margin-top: 12px;
+}
+
+.duty-seq-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.duty-seq-badge-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.duty-seq-badge {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.duty-seq-arrow {
+  color: #94a3b8;
+  font-size: 12px;
+}
 							  </style>
 	</head>
 	<body>
@@ -236,7 +376,7 @@
 								        <input id="originalHolidayToggle" type="checkbox" />
 								      <label for="originalHolidayToggle">原始假日</label>
 								          </span>
-								          <button id="originalPaperButton" class="toggle-button" type="button">原始紙</button>
+								          <button id="selectDutyButton" class="toggle-button" type="button">選班</button>
 								          </div>
 
 									      <div id="scheduleTitle"></div>
@@ -254,6 +394,7 @@
 																						                <li>每兩週需排定2天例假，每四週例假+休息日至少8天，不得連續工作超過12日</li>
 																								        </ol>
 																									      </div>
+																									      <div id="dutyStatsCard" class="duty-stats-card"></div>
 																									          </div>
 																										    </div>
 
@@ -262,13 +403,14 @@
 																												      const monthInput = document.getElementById("monthInput");
 																												      const holidayToggle = document.getElementById("holidayToggle");
 																												      const originalHolidayToggle = document.getElementById("originalHolidayToggle");
-																												      const originalPaperButton = document.getElementById("originalPaperButton");
+																												      const selectDutyButton = document.getElementById("selectDutyButton");
 																												      const scheduleTitle = document.getElementById("scheduleTitle");
 																												      const tableWrapper = document.getElementById("tableWrapper");
 																												      const scheduleTableBody = document.getElementById("scheduleTableBody");
 																												      const holidayFooter = document.getElementById("holidayFooter");
 																												      const scheduleRulesFooter = document.getElementById("scheduleRulesFooter");
-																												      let originalPaperModeEnabled = false;
+																												      let selectDutyModeEnabled = false;
+																												      const userDutySelections = {};
 
 																												      const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -361,19 +503,16 @@
 																													            const isSaturday = weekday === 6;
 																													            const isNational = isNationalHoliday(year, month, day);
 
-																													            if (originalPaperModeEnabled) {
-																															            if (isSunday) {
-																																	              return "例";
-																																	            }
-
-																															            if (isNational) {
+																													            if (selectDutyModeEnabled) {
+																															            if (isSunday) return "例";
+																															            if (isSaturday || isNational) {
+																																	              if (employee.name !== "王宏榮") {
+																																			                const dateKey = formatDateKey(year, month, day);
+																																			                const selKey = `${employee.id}-${dateKey}`;
+																																			                return userDutySelections[selKey] ? "" : "休";
+																																			              }
 																																	              return "休";
 																																	            }
-
-																															            if (isSaturday) {
-																																	              return employee && employee.name === "王宏榮" ? "休" : "";
-																																	            }
-
 																															            return "";
 																															          }
 
@@ -446,6 +585,22 @@
 																															            if (cellType === "weekend") {
 																																	              scheduleCell.classList.add("weekend");
 																																	            }
+
+																																	            const weekday = new Date(year, month - 1, day).getDay();
+																																	            const isSaturday = weekday === 6;
+																																	            const isNational = isNationalHoliday(year, month, day);
+
+																																	            if (employee.name !== "王宏榮" && (isSaturday || isNational)) {
+																																			              scheduleCell.classList.add("duty-selectable");
+																																			              scheduleCell.addEventListener("click", () => {
+																																					                if (!selectDutyModeEnabled) return;
+																																					                const dateKey = formatDateKey(year, month, day);
+																																					                const selKey = `${employee.id}-${dateKey}`;
+																																					                userDutySelections[selKey] = !userDutySelections[selKey];
+																																					                scheduleCell.textContent = userDutySelections[selKey] ? "" : "休";
+																																					                updateRightPanel();
+																																					              });
+																																			            }
 
 																															            row.appendChild(scheduleCell);
 																															          }
@@ -525,40 +680,174 @@
 																																	        }
 
 																														            scheduleRulesFooter.style.display = "block";
-																														            updateLayoutReport();
+																														            updateRightPanel();
 																														          }
 
-																													      function updateLayoutReport() {
-																														            const params = new URLSearchParams(window.location.search);
-
-																														            if (params.get("reportLayout") !== "1") {
-																																            return;
+																												      function getDutyDaysInMonth(year, month) {
+																													            const daysInMonth = getDaysInMonth(year, month);
+																													            let saturdayCount = 0;
+																													            let nationalHolidayCount = 0;
+																													            for (let day = 1; day <= daysInMonth; day++) {
+																																		              const weekday = new Date(year, month - 1, day).getDay();
+																																		              const isNational = isNationalHoliday(year, month, day);
+																																		              if (isNational) {
+																																				                nationalHolidayCount++;
+																																				              } else if (weekday === 6) {
+																																						                saturdayCount++;
+																																						              }
+																																		            }
+																																            return {
+																																		              total: saturdayCount + nationalHolidayCount,
+																																		              saturdays: saturdayCount,
+																																		              holidays: nationalHolidayCount
+																																		            };
 																																          }
 
-																														            const existingReport = document.getElementById("layoutReport");
-																														            const report = existingReport || document.createElement("pre");
-																														            const month = Number(monthInput.value);
-																														            const daysInMonth = Number.isInteger(month) && month >= 1 && month <= 12
-																																            ? getDaysInMonth(Number(yearInput.value), month)
-																																            : 0;
-																														            const payload = {
-																																            clientWidth: tableWrapper.clientWidth,
-																																            scrollWidth: tableWrapper.scrollWidth,
-																																            hasHorizontalScroll: tableWrapper.scrollWidth > tableWrapper.clientWidth,
-																																            renderedDayCount: daysInMonth,
-																																            lastDayLabel: scheduleTableBody.querySelector("tr:first-child td:last-child")?.textContent || ""
-																																          };
+																																          let currentDutySeq = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
+																																          let nextDutySeq = [];
 
-																														            report.id = "layoutReport";
-																														            report.hidden = true;
-																														            report.textContent = JSON.stringify(payload);
+																																          function updateRightPanel() {
+																																		            const year = Number(yearInput.value);
+																																		            const month = Number(monthInput.value);
+																																		            const isValidYear = Number.isInteger(year) && year >= 2026;
+																																		            const isValidMonth = Number.isInteger(month) && month >= 1 && month <= 12;
+																																		            const card = document.getElementById("dutyStatsCard");
+																																		            if (!card) return;
+																																		            if (!selectDutyModeEnabled || !isValidYear || !isValidMonth) {
+																																				              card.style.display = "none";
+																																				              return;
+																																				            }
+																																		            card.style.display = "block";
 
-																														            if (!existingReport) {
-																																            document.body.appendChild(report);
-																																          }
-																														          }
+																																		            const { total, saturdays, holidays } = getDutyDaysInMonth(year, month);
+																																		            const base = Math.floor(total / 4);
+																																		            const remainder = total % 4;
+																																		            const assigned = {};
+																																		            currentDutySeq.forEach((name, idx) => {
+																																				              assigned[name] = base + (idx < remainder ? 1 : 0);
+																																				            });
 
-																													      function applyInitialValuesFromUrl() {
+																																		            if (remainder === 0) {
+																																				              nextDutySeq = [currentDutySeq[1], currentDutySeq[2], currentDutySeq[3], currentDutySeq[0]];
+																																				            } else {
+																																				              nextDutySeq = [...currentDutySeq].sort((p1, p2) => {
+																																						                if (assigned[p1] !== assigned[p2]) {
+																																								                  return assigned[p1] - assigned[p2];
+																																								                }
+																																						                return currentDutySeq.indexOf(p1) - currentDutySeq.indexOf(p2);
+																																						              });
+																																				            }
+
+																																		            const selectedCounts = {};
+																																		            currentDutySeq.forEach(name => {
+																																				              selectedCounts[name] = 0;
+																																				            });
+																																		            const daysInMonth = getDaysInMonth(year, month);
+																																		            const dutyEmployees = employees.filter(e => e.name !== "王宏榮");
+																																		            dutyEmployees.forEach(emp => {
+																																				              let count = 0;
+																																				              for (let day = 1; day <= daysInMonth; day++) {
+																																						                const weekday = new Date(year, month - 1, day).getDay();
+																																						                const isNational = isNationalHoliday(year, month, day);
+																																						                if (weekday === 6 || isNational) {
+																																								                  const dateKey = formatDateKey(year, month, day);
+																																								                  const selKey = `${emp.id}-${dateKey}`;
+																																								                  if (userDutySelections[selKey]) {
+																																										                    count++;
+																																										                  }
+																																								                }
+																																						              }
+																																				              selectedCounts[emp.name] = count;
+																																				            });
+
+																																		            let html = `
+																																				              <div class="duty-stats-title">
+																																				                <span>📅 選班順序與天數統計</span>
+																																				                <button id="resetDutySelectionsBtn" class="toggle-button" style="padding: 4px 8px; font-size: 11px;">重設選班</button>
+																																				              </div>
+																																				              <div class="duty-stats-summary">
+																																				                <strong>本月應值班總天數：${total} 天</strong> (週六 ${saturdays} 天 + 國定假日 ${holidays} 天)<br>
+																																				                <span style="font-size: 11px; color: #94a3b8;">* 點擊週六或國定假日「休」格子可改為「空格」表示上班</span>
+																																				              </div>
+																																				              <div class="duty-seq-flow">
+																																				                <div class="duty-seq-title" style="display: flex; justify-content: space-between; align-items: center;">
+																																				                  <span>👉 本月選班順序</span>
+																																				                  <button id="shuffleSeqBtn" class="toggle-button" style="padding: 2px 6px; font-size: 10px; height: auto;">隨機重整</button>
+																																				                </div>
+																																				                <div class="duty-seq-badge-container">
+																																				                  ${currentDutySeq.map((name, idx) => `<span class="duty-seq-badge">${idx + 1}. ${name}</span>`).join('<span class="duty-seq-arrow">→</span>')}
+																																				                </div>
+																																				              </div>
+																																				              <div style="margin-top: 16px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #475569;">
+																																				                📊 每人值班天數進度 (已選 / 應值)
+																																				              </div>
+																																				              <div class="duty-stats-list">
+																																				            `;
+																																		            currentDutySeq.forEach(name => {
+																																				              const sel = selectedCounts[name] || 0;
+																																				              const req = assigned[name] || 0;
+																																				              let pct = req > 0 ? (sel / req) * 100 : 0;
+																																				              if (pct > 100) pct = 100;
+																																				              let statusClass = "normal";
+																																				              let statusText = "";
+																																				              if (sel === req) {
+																																						                statusClass = "completed";
+																																						                statusText = " (已滿)";
+																																						              } else if (sel > req) {
+																																						                statusClass = "exceeded";
+																																						                statusText = ` (超額 +${sel - req})`;
+																																						              } else {
+																																						                statusText = ` (缺 ${req - sel})`;
+																																						              }
+																																				              html += `
+																																						                <div class="duty-member-item">
+																																						                  <div class="duty-member-info">
+																																						                    <span>${name}</span>
+																																						                    <span>${sel} / ${req} 天${statusText}</span>
+																																						                  </div>
+																																						                  <div class="duty-progress-bar">
+																																						                    <div class="duty-progress-fill ${statusClass}" style="width: ${pct}%;"></div>
+																																						                  </div>
+																																						                </div>
+																																						              `;
+																																				            });
+																																		            html += `
+																																				              </div>
+																																				              <div class="duty-seq-flow" style="background: #f8fafc; border: 1px dashed #cbd5e1;">
+																																				                <div class="duty-seq-title" style="display: flex; justify-content: space-between; align-items: center;">
+																																				                  <span>⏭️ 下月預期順序</span>
+																																				                  <button id="applyNextSeqBtn" class="toggle-button" style="padding: 2px 6px; font-size: 10px; height: auto;">套用為本月</button>
+																																				                </div>
+																																				                <div class="duty-seq-badge-container">
+																																				                  ${nextDutySeq.map((name, idx) => `<span class="duty-seq-badge" style="background: #f1f5f9;">${idx + 1}. ${name}</span>`).join('<span class="duty-seq-arrow">→</span>')}
+																																				                </div>
+																																				              </div>
+																																				            `;
+																																		            card.innerHTML = html;
+
+																																		            document.getElementById("applyNextSeqBtn").addEventListener("click", () => {
+																																				              currentDutySeq = [...nextDutySeq];
+																																				              updateScheduleTitle();
+																																				            });
+
+																																		            document.getElementById("resetDutySelectionsBtn").addEventListener("click", () => {
+																																				              dutyEmployees.forEach(emp => {
+																																						                for (let day = 1; day <= daysInMonth; day++) {
+																																								                  const dateKey = formatDateKey(year, month, day);
+																																								                  const selKey = `${emp.id}-${dateKey}`;
+																																								                  delete userDutySelections[selKey];
+																																								                }
+																																						              });
+																																				              updateScheduleTitle();
+																																				            });
+
+																																		            document.getElementById("shuffleSeqBtn").addEventListener("click", () => {
+																																				              currentDutySeq.sort(() => Math.random() - 0.5);
+																																				              updateScheduleTitle();
+																																				            });
+																																		          }
+
+																												      function applyInitialValuesFromUrl() {
 																														            const params = new URLSearchParams(window.location.search);
 																														            const yearParam = params.get("year");
 																														            const monthParam = params.get("month");
@@ -574,16 +863,16 @@
 																														            updateScheduleTitle();
 																														          }
 
-																													      yearInput.addEventListener("input", updateScheduleTitle);
-																													      monthInput.addEventListener("input", updateScheduleTitle);
-																													      holidayToggle.addEventListener("change", updateScheduleTitle);
-																													      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
-																													      originalPaperButton.addEventListener("click", () => {
-																														            originalPaperModeEnabled = !originalPaperModeEnabled;
-																														            originalPaperButton.classList.toggle("active", originalPaperModeEnabled);
+																												      yearInput.addEventListener("input", updateScheduleTitle);
+																												      monthInput.addEventListener("input", updateScheduleTitle);
+																												      holidayToggle.addEventListener("change", updateScheduleTitle);
+																												      originalHolidayToggle.addEventListener("change", updateScheduleTitle);
+																												      selectDutyButton.addEventListener("click", () => {
+																														            selectDutyModeEnabled = !selectDutyModeEnabled;
+																														            selectDutyButton.classList.toggle("active", selectDutyModeEnabled);
+																														            document.body.classList.toggle("select-duty-mode-active", selectDutyModeEnabled);
 																														            updateScheduleTitle();
 																														          });
-																													      applyInitialValuesFromUrl();
 																													    </script>
 	</body>
 </html>
