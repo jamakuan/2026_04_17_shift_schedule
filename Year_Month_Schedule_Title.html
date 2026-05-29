@@ -451,6 +451,7 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 			              <label for="originalHolidayToggle">原始假日</label>
 			            </span>
 			            <button id="selectDutyButton" class="toggle-button" type="button">選班</button>
+			            <button id="specialLeaveButton" class="toggle-button" type="button">特休</button>
 			          </div>
 			        </div>
 
@@ -489,7 +490,9 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																												      const scheduleTableBody = document.getElementById("scheduleTableBody");
 																												      const holidayFooter = document.getElementById("holidayFooter");
 																												      const scheduleRulesFooter = document.getElementById("scheduleRulesFooter");
+																												      const specialLeaveButton = document.getElementById("specialLeaveButton");
 																												      let selectDutyModeEnabled = false;
+																												      let specialLeaveModeEnabled = false;
 																												      const userDutySelections = {};
 
 																												      const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
@@ -593,11 +596,18 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																			              }
 																																	              return "休";
 																																	            }
-																															            // 平日補休
-																															            if (employee.name !== "王宏榮") {
+																															            // 平日補休與特休
+																															            if (employee.name !== "王宏浪" && employee.name !== "王宏榮") {
 																																	              const dateKey = formatDateKey(year, month, day);
 																																	              const selKey = `${employee.id}-${dateKey}`;
-																																	              return userDutySelections[selKey] ? "補" : "";
+																																	              const val = userDutySelections[selKey];
+																																	              if (val === "特") {
+																																	                return "特";
+																																	              } else if (val === "補" || val === true) {
+																																	                return "補";
+																																	              } else {
+																																	                return "";
+																																	              }
 																																	            }
 																															            return "";
 																															          }
@@ -705,15 +715,38 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																					                
 																																					                // 檢查上限限制
 																																					                if (!isSelected && scheduleCell.classList.contains("duty-limit-reached")) {
-																																							                  return;
+																																					                  if (isHoliday || !specialLeaveModeEnabled) {
+																																							                    return;
+																																							                  }
 																																							                }
 																																					                
-																																					                userDutySelections[selKey] = !userDutySelections[selKey];
-																																					                if (isHoliday) {
-																																							                  scheduleCell.textContent = userDutySelections[selKey] ? "" : "休";
-																																							                } else {
-																																									                  scheduleCell.textContent = userDutySelections[selKey] ? "補" : "";
-																																									                }
+																																					                if (specialLeaveModeEnabled && !isHoliday) {
+																																					                  // 特休模式且點選平日
+																																					                  if (userDutySelections[selKey] === "特") {
+																																					                    userDutySelections[selKey] = false;
+																																					                    scheduleCell.textContent = "";
+																																					                  } else if (!userDutySelections[selKey]) {
+																																					                    userDutySelections[selKey] = "特";
+																																					                    scheduleCell.textContent = "特";
+																																					                  } else {
+																																					                    alert("欲修改平日補休，請先關閉特休模式。");
+																																					                    return;
+																																					                  }
+																																					                } else {
+																																					                  // 一般選班模式，或選假日值班
+																																					                  if (isHoliday) {
+																																					                    userDutySelections[selKey] = !userDutySelections[selKey];
+																																					                    scheduleCell.textContent = userDutySelections[selKey] ? "" : "休";
+																																					                  } else {
+																																					                    if (userDutySelections[selKey] === "特") {
+																																					                      userDutySelections[selKey] = false;
+																																					                      scheduleCell.textContent = "";
+																																					                    } else {
+																																					                      userDutySelections[selKey] = !userDutySelections[selKey];
+																																					                      scheduleCell.textContent = userDutySelections[selKey] ? "補" : "";
+																																					                    }
+																																					                  }
+																																					                }
 																																					                
 																																					                updateSelectableCellsState();
 																																					                updateRightPanel();
@@ -847,7 +880,7 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																				              if (userDutySelections[selKey]) {
 																																						                if (weekday === 6 || isNational) {
 																																								                  dutyCount++;
-																																								                } else if (weekday !== 0) {
+																																								                } else if (weekday !== 0 && userDutySelections[selKey] !== "特") {
 																																										                  compCount++;
 																																										                }
 																																						              }
@@ -1189,6 +1222,42 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																														            selectDutyModeEnabled = !selectDutyModeEnabled;
 																														            selectDutyButton.classList.toggle("active", selectDutyModeEnabled);
 																														            document.body.classList.toggle("select-duty-mode-active", selectDutyModeEnabled);
+																														            
+																														            if (!selectDutyModeEnabled && specialLeaveModeEnabled) {
+																														              specialLeaveModeEnabled = false;
+																														              specialLeaveButton.classList.remove("active");
+																														              document.body.classList.remove("special-leave-mode-active");
+																														            }
+																														            updateScheduleTitle();
+																														          });
+
+																												      specialLeaveButton.addEventListener("click", () => {
+																														            const year = Number(yearInput.value);
+																														            const month = Number(monthInput.value);
+																														            const { total } = getDutyDaysInMonth(year, month);
+																														            const base = Math.floor(total / 4);
+																														            const remainder = total % 4;
+																														            const assigned = {};
+																														            currentDutySeq.forEach((name, idx) => {
+																														              assigned[name] = base + (idx < remainder ? 1 : 0);
+																														            });
+																														            
+																														            const currentSelectorName = getCurrentSelectorName(year, month, assigned);
+																														            if (currentSelectorName) {
+																														              const emp = employees.find(e => e.name === currentSelectorName);
+																														              const { duty, comp } = getEmployeeSelections(emp.id, year, month);
+																														              const req = assigned[currentSelectorName];
+																														              if (duty < req || comp < req) {
+																														                alert(`⚠️ 您尚未完成當月選班！\n當前輪到選班人員：${currentSelectorName}\n已選值班：${duty} / ${req} 天\n已選補休：${comp} / ${req} 天\n請先完成選班再使用特休按鈕。`);
+																														                return;
+																														              }
+																														            } else {
+																														              if (!year || !month) return;
+																														            }
+
+																														            specialLeaveModeEnabled = !specialLeaveModeEnabled;
+																														            specialLeaveButton.classList.toggle("active", specialLeaveModeEnabled);
+																														            document.body.classList.toggle("special-leave-mode-active", specialLeaveModeEnabled);
 																														            updateScheduleTitle();
 																														          });
 																													      applyInitialValuesFromUrl();
