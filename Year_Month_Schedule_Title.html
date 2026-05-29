@@ -413,6 +413,7 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																				            <li>如有需要調整，請與其他排班人員協調，協調完畢再通知經理進行更新</li>
 																					              <li>平日上班限制1人，國定假日視情況而定</li>
 																						                <li>每兩週需排定2天例假，每四週例假+休息日至少8天，不得連續工作超過12日</li>
+																            <li>假日值班（週六及國定假日）限制1人值班，後續順序人員不可重複選擇已有人值班的假日。</li>
 																								        </ol>
 																									      </div>
 																									      <div id="dutyStatsCard" class="duty-stats-card"></div>
@@ -861,7 +862,17 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																								                } else {
 																																										                  cell.classList.remove("duty-not-turn");
 																																										                  
-																																										                  const limitReached = isHoliday ? (duty >= limit) : (comp >= limit);
+																																										                  // 檢查是否已被其他人選取值班 (僅限假日)
+																							                  let isHolidayTakenByOther = false;
+																							                  if (isHoliday) {
+																							                    isHolidayTakenByOther = employees.some(otherEmp => {
+																							                      if (otherEmp.name === "王宏榮" || otherEmp.id === emp.id) return false;
+																							                      const otherSelKey = `${otherEmp.id}-${dateKey}`;
+																							                      return !!userDutySelections[otherSelKey];
+																							                    });
+																							                  }
+																							                  
+																							                  const limitReached = isHoliday ? (duty >= limit || isHolidayTakenByOther) : (comp >= limit);
 																																										                  if (limitReached && !isSelected) {
 																																												                    cell.classList.add("duty-limit-reached");
 																																												                  } else {
