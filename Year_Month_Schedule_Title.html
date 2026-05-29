@@ -924,13 +924,21 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																														            const yearParam = params.get("year");
 																														            const monthParam = params.get("month");
 
+																														            const today = new Date();
+																														            const currentYear = today.getFullYear();
+																														            const currentMonth = today.getMonth() + 1;
+
 																														            if (yearParam !== null) {
 																																            yearInput.value = yearParam;
-																																          }
+																																          } else {
+																																		            yearInput.value = currentYear;
+																																		          }
 
 																														            if (monthParam !== null) {
 																																            monthInput.value = monthParam;
-																																          }
+																																          } else {
+																																		            monthInput.value = currentMonth;
+																																		          }
 
 																														            updateScheduleTitle();
 																														          }
