@@ -654,14 +654,19 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																															            return;
 																															          }
 
-																													            // 檢測是否為往後切換了一個月，若是則自動繼承上月算出的下月順序
-																													            if (lastRenderedYear !== null && lastRenderedMonth !== null) {
-																																	              const isNextMonth = (year === lastRenderedYear && month === lastRenderedMonth + 1) || 
-																																	                                  (year === lastRenderedYear + 1 && lastRenderedMonth === 12 && month === 1);
-																																	              if (isNextMonth && nextDutySeq.length === 4) {
-																																			                currentDutySeq = [...nextDutySeq];
-																																			              }
-																																	            }
+																													            const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+																													            if (dutySeqHistory[monthKey]) {
+																																	              currentDutySeq = [...dutySeqHistory[monthKey]];
+																																	            } else {
+																																			              if (lastRenderedYear !== null && lastRenderedMonth !== null) {
+																																					                const isNextMonth = (year === lastRenderedYear && month === lastRenderedMonth + 1) || 
+																																					                                    (year === lastRenderedYear + 1 && lastRenderedMonth === 12 && month === 1);
+																																					                if (isNextMonth && nextDutySeq.length === 4) {
+																																							                  currentDutySeq = [...nextDutySeq];
+																																							                }
+																																					              }
+																																			              dutySeqHistory[monthKey] = [...currentDutySeq];
+																																			            }
 																													            lastRenderedYear = year;
 																													            lastRenderedMonth = month;
 
@@ -734,6 +739,7 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																          let nextDutySeq = [];
 																																          let lastRenderedYear = null;
 																																          let lastRenderedMonth = null;
+																																          const dutySeqHistory = {};
 
 																																          function updateSelectableCellsState() {
 																																		            const year = Number(yearInput.value);
@@ -912,6 +918,8 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 
 																																		            document.getElementById("applyNextSeqBtn").addEventListener("click", () => {
 																																				              currentDutySeq = [...nextDutySeq];
+																																				              const monthKey = `${Number(yearInput.value)}-${String(Number(monthInput.value)).padStart(2, "0")}`;
+																																				              dutySeqHistory[monthKey] = [...currentDutySeq];
 																																				              updateScheduleTitle();
 																																				            });
 
@@ -928,6 +936,8 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 
 																																		            document.getElementById("shuffleSeqBtn").addEventListener("click", () => {
 																																				              currentDutySeq.sort(() => Math.random() - 0.5);
+																																				              const monthKey = `${Number(yearInput.value)}-${String(Number(monthInput.value)).padStart(2, "0")}`;
+																																				              dutySeqHistory[monthKey] = [...currentDutySeq];
 																																				              updateScheduleTitle();
 																																				            });
 																																		          }
