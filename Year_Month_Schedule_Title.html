@@ -658,13 +658,8 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																													            if (dutySeqHistory[monthKey]) {
 																																	              currentDutySeq = [...dutySeqHistory[monthKey]];
 																																	            } else {
-																																			              if (lastRenderedYear !== null && lastRenderedMonth !== null) {
-																																					                const isNextMonth = (year === lastRenderedYear && month === lastRenderedMonth + 1) || 
-																																					                                    (year === lastRenderedYear + 1 && lastRenderedMonth === 12 && month === 1);
-																																					                if (isNextMonth && nextDutySeq.length === 4) {
-																																							                  currentDutySeq = [...nextDutySeq];
-																																							                }
-																																					              }
+																																			              // 第一次造訪此月，無歷史紀錄，則使用預設順序
+																																			              currentDutySeq = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
 																																			              dutySeqHistory[monthKey] = [...currentDutySeq];
 																																			            }
 																													            lastRenderedYear = year;
@@ -828,6 +823,11 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																						                return currentDutySeq.indexOf(p1) - currentDutySeq.indexOf(p2);
 																																						              });
 																																				            }
+
+																																				            // 即時同步將下月的預期順序寫入下月的歷史紀錄中
+																																				            const nextMonthDate = new Date(year, month, 1);
+																																				            const nextMonthKey = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
+																																				            dutySeqHistory[nextMonthKey] = [...nextDutySeq];
 
 																																		            const selectedCounts = {};
 																																		            currentDutySeq.forEach(name => {
