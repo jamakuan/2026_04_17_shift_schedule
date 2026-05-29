@@ -253,6 +253,22 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* 閃爍動畫 */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* 當未輪到該人員選班時，滑鼠顯示為禁止，且無 hover 背景變色 */
+body.select-duty-mode-active .duty-selectable.duty-not-turn {
+  cursor: not-allowed !important;
+}
+body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
 .duty-stats-title {
   font-size: 16px;
   font-weight: 700;
@@ -518,6 +534,12 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																			              }
 																																	              return "休";
 																																	            }
+																															            // 平日補休
+																															            if (employee.name !== "王宏榮") {
+																																	              const dateKey = formatDateKey(year, month, day);
+																																	              const selKey = `${employee.id}-${dateKey}`;
+																																	              return userDutySelections[selKey] ? "補" : "";
+																																	            }
 																															            return "";
 																															          }
 
@@ -594,24 +616,46 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																	            const weekday = new Date(year, month - 1, day).getDay();
 																																	            const isSaturday = weekday === 6;
 																																	            const isNational = isNationalHoliday(year, month, day);
+																																	            const isHoliday = (isSaturday || isNational);
 
-																																	            if (employee.name !== "王宏榮" && (isSaturday || isNational)) {
+																																	            // 只要不是王宏榮，且不是週日，這天就是可選填的
+																																	            if (employee.name !== "王宏榮" && weekday !== 0) {
 																																			              scheduleCell.classList.add("duty-selectable");
 																																			              scheduleCell.setAttribute("data-employee-id", employee.id);
 																																			              scheduleCell.setAttribute("data-day", day);
 																																			              scheduleCell.addEventListener("click", () => {
 																																					                if (!selectDutyModeEnabled) return;
+																																					                
+																																					                const { total } = getDutyDaysInMonth(year, month);
+																																					                const base = Math.floor(total / 4);
+																																					                const remainder = total % 4;
+																																					                const assigned = {};
+																																					                currentDutySeq.forEach((name, idx) => {
+																																							                  assigned[name] = base + (idx < remainder ? 1 : 0);
+																																							                });
+																																					                
+																																					                // 檢查是否輪到該人員。如果未輪到他，則拒絕點擊
+																																					                const currentSelectorName = getCurrentSelectorName(year, month, assigned);
+																																					                if (employee.name !== currentSelectorName) {
+																																							                  return;
+																																							                }
+																																					                
 																																					                const dateKey = formatDateKey(year, month, day);
 																																					                const selKey = `${employee.id}-${dateKey}`;
 																																					                const isSelected = !!userDutySelections[selKey];
 																																					                
-																																					                // 若尚未選取且已滿額，則拒絕點擊
+																																					                // 檢查上限限制
 																																					                if (!isSelected && scheduleCell.classList.contains("duty-limit-reached")) {
 																																							                  return;
 																																							                }
 																																					                
 																																					                userDutySelections[selKey] = !userDutySelections[selKey];
-																																					                scheduleCell.textContent = userDutySelections[selKey] ? "" : "休";
+																																					                if (isHoliday) {
+																																							                  scheduleCell.textContent = userDutySelections[selKey] ? "" : "休";
+																																							                } else {
+																																									                  scheduleCell.textContent = userDutySelections[selKey] ? "補" : "";
+																																									                }
+																																					                
 																																					                updateSelectableCellsState();
 																																					                updateRightPanel();
 																																					              });
@@ -730,6 +774,39 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																		            };
 																																          }
 
+																																          function getEmployeeSelections(empId, year, month) {
+																																		            const daysInMonth = getDaysInMonth(year, month);
+																																		            let dutyCount = 0;
+																																		            let compCount = 0;
+																																		            for (let day = 1; day <= daysInMonth; day++) {
+																																				              const weekday = new Date(year, month - 1, day).getDay();
+																																				              const isNational = isNationalHoliday(year, month, day);
+																																				              const dateKey = formatDateKey(year, month, day);
+																																				              const selKey = `${empId}-${dateKey}`;
+																																				              if (userDutySelections[selKey]) {
+																																						                if (weekday === 6 || isNational) {
+																																								                  dutyCount++;
+																																								                } else if (weekday !== 0) {
+																																										                  compCount++;
+																																										                }
+																																						              }
+																																				            }
+																																		            return { duty: dutyCount, comp: compCount };
+																																		          }
+
+																																		          function getCurrentSelectorName(year, month, assigned) {
+																																				            for (const name of currentDutySeq) {
+																																						              const emp = employees.find(e => e.name === name);
+																																						              if (!emp) continue;
+																																						              const limit = assigned[name] || 0;
+																																						              const { duty, comp } = getEmployeeSelections(emp.id, year, month);
+																																						              if (duty !== limit || comp !== limit) {
+																																								                return name;
+																																								              }
+																																						            }
+																																				            return null;
+																																				          }
+
 																																          let currentDutySeq = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
 																																          let nextDutySeq = [];
 																																          let lastRenderedYear = null;
@@ -752,27 +829,22 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																				              assigned[name] = base + (idx < remainder ? 1 : 0);
 																																				            });
 
+																																		            // 獲取當前輪到選班的人
+																																		            const currentSelectorName = getCurrentSelectorName(year, month, assigned);
+
 																																		            employees.forEach(emp => {
 																																				              if (emp.name === "王宏榮") return;
 																																				              const limit = assigned[emp.name] || 0;
-																																				              const daysInMonth = getDaysInMonth(year, month);
-
-																																				              let selectedCount = 0;
-																																				              for (let day = 1; day <= daysInMonth; day++) {
-																																						                const weekday = new Date(year, month - 1, day).getDay();
-																																						                const isNational = isNationalHoliday(year, month, day);
-																																						                if (weekday === 6 || isNational) {
-																																								                  const dateKey = formatDateKey(year, month, day);
-																																								                  const selKey = `${emp.id}-${dateKey}`;
-																																								                  if (userDutySelections[selKey]) {
-																																										                    selectedCount++;
-																																										                  }
-																																								                }
-																																						              }
+																																				              const isCurrent = (emp.name === currentSelectorName);
+																																				              const { duty, comp } = getEmployeeSelections(emp.id, year, month);
 
 																																				              const cells = document.querySelectorAll(`td[data-employee-id="${emp.id}"]`);
 																																				              cells.forEach(cell => {
 																																						                const day = Number(cell.getAttribute("data-day"));
+																																						                const weekday = new Date(year, month - 1, day).getDay();
+																																						                const isNational = isNationalHoliday(year, month, day);
+																																						                const isHoliday = (weekday === 6 || isNational);
+																																						                
 																																						                const dateKey = formatDateKey(year, month, day);
 																																						                const selKey = `${emp.id}-${dateKey}`;
 																																						                const isSelected = !!userDutySelections[selKey];
@@ -783,10 +855,18 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																										                  cell.classList.remove("duty-selected-active");
 																																										                }
 
-																																						                if (selectedCount >= limit) {
-																																								                  cell.classList.add("duty-limit-reached");
+																																						                if (!isCurrent) {
+																																								                  cell.classList.add("duty-not-turn");
+																																								                  cell.classList.remove("duty-limit-reached");
 																																								                } else {
-																																										                  cell.classList.remove("duty-limit-reached");
+																																										                  cell.classList.remove("duty-not-turn");
+																																										                  
+																																										                  const limitReached = isHoliday ? (duty >= limit) : (comp >= limit);
+																																										                  if (limitReached && !isSelected) {
+																																												                    cell.classList.add("duty-limit-reached");
+																																												                  } else {
+																																														                    cell.classList.remove("duty-limit-reached");
+																																														                  }
 																																										                }
 																																						              });
 																																				            });
@@ -829,37 +909,36 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																				            const nextMonthKey = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
 																																				            dutySeqHistory[nextMonthKey] = [...nextDutySeq];
 
-																																		            const selectedCounts = {};
-																																		            currentDutySeq.forEach(name => {
-																																				              selectedCounts[name] = 0;
-																																				            });
 																																		            const daysInMonth = getDaysInMonth(year, month);
 																																		            const dutyEmployees = employees.filter(e => e.name !== "王宏榮");
-																																		            dutyEmployees.forEach(emp => {
-																																				              let count = 0;
-																																				              for (let day = 1; day <= daysInMonth; day++) {
-																																						                const weekday = new Date(year, month - 1, day).getDay();
-																																						                const isNational = isNationalHoliday(year, month, day);
-																																						                if (weekday === 6 || isNational) {
-																																								                  const dateKey = formatDateKey(year, month, day);
-																																								                  const selKey = `${emp.id}-${dateKey}`;
-																																								                  if (userDutySelections[selKey]) {
-																																										                    count++;
-																																										                  }
-																																								                }
-																																						              }
-																																				              selectedCounts[emp.name] = count;
-																																				            });
+																																		            
+																																		            const currentSelectorName = getCurrentSelectorName(year, month, assigned);
+																																		            let selectorHtml = "";
+																																		            if (currentSelectorName) {
+																																				              selectorHtml = `
+																																						                <div style="margin-top: 8px; font-weight: 700; color: #f59e0b; background: #fffbeb; border: 1px solid #fef3c7; padding: 6px 10px; border-radius: 6px; font-size: 13px;">
+																																						                  🔔 當前輪到：<strong style="color: #d97706; font-size: 14px;">${currentSelectorName}</strong> 選班與補休
+																																						                </div>
+																																						              `;
+																																				            } else {
+																																						              selectorHtml = `
+																																						                <div style="margin-top: 8px; font-weight: 700; color: #10b981; background: #ecfdf5; border: 1px solid #d1fae5; padding: 6px 10px; border-radius: 6px; font-size: 13px;">
+																																						                  🎉 本月選班與補休已全部完成！
+																																						                </div>
+																																						              `;
+																																						            }
 
 																																		            let html = `
 																																				              <div class="duty-stats-title">
 																																				                <span>📅 選班順序與天數統計</span>
 																																				                <button id="resetDutySelectionsBtn" class="toggle-button" style="padding: 4px 8px; font-size: 11px;">重設選班</button>
 																																				              </div>
-																																				              <div class="duty-stats-summary">
+																																				              <div class="duty-stats-summary" style="margin-bottom: 8px;">
 																																				                <strong>本月應值班總天數：${total} 天</strong> (週六 ${saturdays} 天 + 國定假日 ${holidays} 天)<br>
-																																				                <span style="font-size: 11px; color: #94a3b8;">* 點擊週六或國定假日「休」格子可改為「空格」表示上班</span>
+																																				                <span style="font-size: 11px; color: #94a3b8;">* 假日「休」改為「空格」表示上班；平日可選「補」補休</span>
 																																				              </div>
+																																				              ${selectorHtml}
+																																				              
 																																				              <div class="duty-seq-flow">
 																																				                <div class="duty-seq-title" style="display: flex; justify-content: space-between; align-items: center;">
 																																				                  <span>👉 本月選班順序</span>
@@ -870,34 +949,53 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																																				                </div>
 																																				              </div>
 																																				              <div style="margin-top: 16px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #475569;">
-																																				                📊 每人值班天數進度 (已選 / 應值)
+																																				                📊 每人選班進度 (已選 / 應值)
 																																				              </div>
 																																				              <div class="duty-stats-list">
 																																				            `;
 																																		            currentDutySeq.forEach(name => {
-																																				              const sel = selectedCounts[name] || 0;
+																																				              const emp = employees.find(e => e.name === name);
+																																				              const { duty: selDuty, comp: selComp } = getEmployeeSelections(emp.id, year, month);
 																																				              const req = assigned[name] || 0;
-																																				              let pct = req > 0 ? (sel / req) * 100 : 0;
-																																				              if (pct > 100) pct = 100;
-																																				              let statusClass = "normal";
-																																				              let statusText = "";
-																																				              if (sel === req) {
-																																						                statusClass = "completed";
-																																						                statusText = " (已滿)";
-																																						              } else if (sel > req) {
-																																						                statusClass = "exceeded";
-																																						                statusText = ` (超額 +${sel - req})`;
-																																						              } else {
-																																						                statusText = ` (缺 ${req - sel})`;
-																																						              }
+																																				              
+																																				              let dutyPct = req > 0 ? (selDuty / req) * 100 : 0;
+																																				              if (dutyPct > 100) dutyPct = 100;
+																																				              let compPct = req > 0 ? (selComp / req) * 100 : 0;
+																																				              if (compPct > 100) compPct = 100;
+
+																																				              const isCurrent = (name === currentSelectorName);
+																																				              const isCompleted = (selDuty === req && selComp === req);
+																																				              
+																																				              let badgeHtml = "";
+																																				              if (isCompleted) {
+																																						                badgeHtml = `<span style="background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">已完成</span>`;
+																																						              } else if (isCurrent) {
+																																								                badgeHtml = `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; animation: pulse 1.5s infinite;">選班中</span>`;
+																																								              } else {
+																																										                badgeHtml = `<span style="background: #f1f5f9; color: #94a3b8; border: 1px solid #cbd5e1; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700;">等待中</span>`;
+																																										              }
+
 																																				              html += `
-																																						                <div class="duty-member-item">
-																																						                  <div class="duty-member-info">
-																																						                    <span>${name}</span>
-																																						                    <span>${sel} / ${req} 天${statusText}</span>
+																																						                <div class="duty-member-item" style="padding: 10px; border-radius: 8px; border: 1px solid ${isCurrent ? '#fde68a' : '#e2e8f0'}; background: ${isCurrent ? '#fffbeb' : '#ffffff'};">
+																																						                  <div class="duty-member-info" style="margin-bottom: 6px;">
+																																						                    <span style="font-weight: 700; color: ${isCurrent ? '#b45309' : '#334155'};">${name} ${badgeHtml}</span>
+																																						                    <span style="font-size: 12px; color: #64748b;">應值 ${req} 天</span>
 																																						                  </div>
-																																						                  <div class="duty-progress-bar">
-																																						                    <div class="duty-progress-fill ${statusClass}" style="width: ${pct}%;"></div>
+																																						                  
+																																						                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #475569; margin-bottom: 2px;">
+																																						                    <span>📅 假日值班：</span>
+																																						                    <span style="font-weight: 700;">${selDuty} / ${req} 天</span>
+																																						                  </div>
+																																						                  <div class="duty-progress-bar" style="margin-bottom: 8px; height: 6px;">
+																																						                    <div class="duty-progress-fill ${selDuty === req ? 'completed' : 'normal'}" style="width: ${dutyPct}%;"></div>
+																																						                  </div>
+																																						                  
+																																						                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #475569; margin-bottom: 2px;">
+																																						                    <span>🏖️ 平日補休：</span>
+																																						                    <span style="font-weight: 700;">${selComp} / ${req} 天</span>
+																																						                  </div>
+																																						                  <div class="duty-progress-bar" style="height: 6px;">
+																																						                    <div class="duty-progress-fill ${selComp === req ? 'completed' : 'normal'}" style="width: ${compPct}%;"></div>
 																																						                  </div>
 																																						                </div>
 																																						              `;
