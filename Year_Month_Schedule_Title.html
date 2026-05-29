@@ -396,6 +396,22 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
   min-width: 320px;
   margin-top: 0;
 }
+
+.duty-member-item {
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.duty-member-item:active {
+  cursor: grabbing;
+}
+
+.duty-member-item.drag-over {
+  border: 2px dashed #3366cc !important;
+  background-color: #eff6ff !important;
+  transform: scale(1.02);
+}
 							  </style>
 	</head>
 	<body>
@@ -970,29 +986,23 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																						            }
 
 																																		            let html = `
-																																				              <div class="duty-stats-title">
-																																				                <span>📅 選班順序與天數統計</span>
-																																				                <button id="resetDutySelectionsBtn" class="toggle-button" style="padding: 4px 8px; font-size: 11px;">重設選班</button>
-																																				              </div>
-																																				              <div class="duty-stats-summary" style="margin-bottom: 8px;">
-																																				                <strong>本月應值班總天數：${total} 天</strong> (週六 ${saturdays} 天 + 國定假日 ${holidays} 天)<br>
-																																				                <span style="font-size: 11px; color: #94a3b8;">* 假日「休」改為「空格」表示上班；平日可選「補」補休</span>
-																																				              </div>
-																																				              ${selectorHtml}
-																																				              
-																																				              <div class="duty-seq-flow">
-																																				                <div class="duty-seq-title" style="display: flex; justify-content: space-between; align-items: center;">
-																																				                  <span>👉 本月選班順序</span>
-																																				                  <button id="shuffleSeqBtn" class="toggle-button" style="padding: 2px 6px; font-size: 10px; height: auto;">隨機重整</button>
-																																				                </div>
-																																				                <div class="duty-seq-badge-container">
-																																				                  ${currentDutySeq.map((name, idx) => `<span class="duty-seq-badge">${idx + 1}. ${name}</span>`).join('<span class="duty-seq-arrow">→</span>')}
-																																				                </div>
-																																				              </div>
-																																				              <div style="margin-top: 16px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #475569;">
-																																				                📊 每人選班進度 (已選 / 應值)
-																																				              </div>
-																																				              <div class="duty-stats-list">
+              <div class="duty-stats-title">
+                <span>📅 選班順序與天數統計</span>
+                <div style="display: flex; gap: 6px;">
+                  <button id="shuffleSeqBtn" class="toggle-button" style="padding: 4px 8px; font-size: 11px;">隨機重整</button>
+                  <button id="resetDutySelectionsBtn" class="toggle-button" style="padding: 4px 8px; font-size: 11px;">重設選班</button>
+                </div>
+              </div>
+              <div class="duty-stats-summary" style="margin-bottom: 8px;">
+                <strong>本月應值班總天數：${total} 天</strong> (週六 ${saturdays} 天 + 國定假日 ${holidays} 天)<br>
+                <span style="font-size: 11px; color: #94a3b8;">* 假日「休」改為「空格」表示上班；平日可選「補」補休</span>
+              </div>
+              ${selectorHtml}
+              
+              <div style="margin-top: 16px; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                <span>📊 每人選班進度 (可拖曳調整順序)</span>
+              </div>
+              <div class="duty-stats-list">
 																																				            `;
 																																		            currentDutySeq.forEach(name => {
 																																				              const emp = employees.find(e => e.name === name);
@@ -1017,9 +1027,9 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																										              }
 
 																																				              html += `
-																																						                <div class="duty-member-item" style="padding: 10px; border-radius: 8px; border: 1px solid ${isCurrent ? '#fde68a' : '#e2e8f0'}; background: ${isCurrent ? '#fffbeb' : '#ffffff'};">
-																																						                  <div class="duty-member-info" style="margin-bottom: 6px;">
-																																						                    <span style="font-weight: 700; color: ${isCurrent ? '#b45309' : '#334155'};">${name} ${badgeHtml}</span>
+																																						                <div class="duty-member-item" draggable="true" data-name="${name}" style="padding: 10px; border-radius: 8px; border: 1px solid ${isCurrent ? '#fde68a' : '#e2e8f0'}; background: ${isCurrent ? '#fffbeb' : '#ffffff'};">
+						                  <div class="duty-member-info" style="margin-bottom: 6px;">
+						                    <span style="font-weight: 700; color: ${isCurrent ? '#b45309' : '#334155'};">${currentDutySeq.indexOf(name) + 1}. ${name} ${badgeHtml}</span>
 																																						                    <span style="font-size: 12px; color: #64748b;">應值 ${req} 天</span>
 																																						                  </div>
 																																						                  
@@ -1054,6 +1064,58 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																				              </div>
 																																				            `;
 																																		            card.innerHTML = html;
+
+			            // 綁定拖曳排序事件
+			            let draggedName = null;
+			            const items = card.querySelectorAll(".duty-member-item");
+			            items.forEach(item => {
+			              item.addEventListener("dragstart", (e) => {
+			                draggedName = item.getAttribute("data-name");
+			                item.style.opacity = "0.5";
+			                e.dataTransfer.effectAllowed = "move";
+			                e.dataTransfer.setData("text/plain", draggedName);
+			              });
+			              
+			              item.addEventListener("dragend", () => {
+			                item.style.opacity = "1";
+			                draggedName = null;
+			                items.forEach(i => i.classList.remove("drag-over"));
+			              });
+			              
+			              item.addEventListener("dragover", (e) => {
+			                e.preventDefault();
+			                if (draggedName && draggedName !== item.getAttribute("data-name")) {
+			                  item.classList.add("drag-over");
+			                }
+			              });
+			              
+			              item.addEventListener("dragleave", () => {
+			                item.classList.remove("drag-over");
+			              });
+			              
+			              item.addEventListener("drop", (e) => {
+			                e.preventDefault();
+			                item.classList.remove("drag-over");
+			                const name = e.dataTransfer.getData("text/plain");
+			                const targetName = item.getAttribute("data-name");
+			                
+			                if (name && name !== targetName) {
+			                  const fromIdx = currentDutySeq.indexOf(name);
+			                  const toIdx = currentDutySeq.indexOf(targetName);
+			                  if (fromIdx > -1 && toIdx > -1) {
+			                    currentDutySeq.splice(fromIdx, 1);
+			                    currentDutySeq.splice(toIdx, 0, name);
+			                    
+			                    const monthKey = `${Number(yearInput.value)}-${String(Number(monthInput.value)).padStart(2, "0")}`;
+			                    dutySeqHistory[monthKey] = [...currentDutySeq];
+			                    
+			                    updateScheduleTitle();
+			                  }
+			                }
+			              });
+			            });
+
+
 
 																																		            document.getElementById("applyNextSeqBtn").addEventListener("click", () => {
 																																				              currentDutySeq = [...nextDutySeq];
