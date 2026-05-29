@@ -242,8 +242,8 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   padding: 20px;
-  max-width: 480px;
-  margin-left: auto;
+  max-width: 100%;
+  box-sizing: border-box;
   display: none;
   animation: slideUp 0.3s ease-out;
 }
@@ -293,7 +293,8 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 
 .duty-stats-list {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -302,6 +303,9 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 220px;
+  box-sizing: border-box;
 }
 
 .duty-member-info {
@@ -470,8 +474,8 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 			        <table>
 			          <tbody id="scheduleTableBody"></tbody>
 			        </table>
-			        <div id="dutyStatsCard" class="duty-stats-card"></div>
-																									          </div>
+			      </div>
+			      <div id="dutyStatsCard" class="duty-stats-card"></div>
 																										    </div>
 
 																										      <script>
