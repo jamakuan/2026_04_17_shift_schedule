@@ -654,6 +654,17 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 																															            return;
 																															          }
 
+																													            // 檢測是否為往後切換了一個月，若是則自動繼承上月算出的下月順序
+																													            if (lastRenderedYear !== null && lastRenderedMonth !== null) {
+																																	              const isNextMonth = (year === lastRenderedYear && month === lastRenderedMonth + 1) || 
+																																	                                  (year === lastRenderedYear + 1 && lastRenderedMonth === 12 && month === 1);
+																																	              if (isNextMonth && nextDutySeq.length === 4) {
+																																			                currentDutySeq = [...nextDutySeq];
+																																			              }
+																																	            }
+																													            lastRenderedYear = year;
+																													            lastRenderedMonth = month;
+
 																													            scheduleTitle.textContent = `${year}年${month}月排班表`;
 																													            scheduleTitle.style.display = "block";
 																													            tableWrapper.style.display = "block";
@@ -721,6 +732,8 @@ body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selec
 
 																																          let currentDutySeq = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
 																																          let nextDutySeq = [];
+																																          let lastRenderedYear = null;
+																																          let lastRenderedMonth = null;
 
 																																          function updateSelectableCellsState() {
 																																		            const year = Number(yearInput.value);
