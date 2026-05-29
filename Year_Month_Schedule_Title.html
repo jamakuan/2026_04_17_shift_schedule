@@ -493,6 +493,7 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																												      const specialLeaveButton = document.getElementById("specialLeaveButton");
 																												      let selectDutyModeEnabled = false;
 																												      let specialLeaveModeEnabled = false;
+																												      let lastSelectorName = null;
 																												      const userDutySelections = {};
 
 																												      const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
@@ -1039,6 +1040,17 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																		            const dutyEmployees = employees.filter(e => e.name !== "王宏榮");
 																																		            
 																																		            const currentSelectorName = getCurrentSelectorName(year, month, assigned);
+																																		            
+																																		            // 檢查是否換了下一個選班人，若是，特休按鈕要自己關閉
+																																		            if (lastSelectorName !== null && lastSelectorName !== currentSelectorName) {
+																																		              if (specialLeaveModeEnabled) {
+																																		                specialLeaveModeEnabled = false;
+																																		                specialLeaveButton.classList.remove("active");
+																																		                document.body.classList.remove("special-leave-mode-active");
+																																		              }
+																																		            }
+																																		            lastSelectorName = currentSelectorName;
+																																		            
 																																		            let selectorHtml = "";
 																																		            if (currentSelectorName) {
 																																				              selectorHtml = `
