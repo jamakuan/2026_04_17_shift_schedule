@@ -226,6 +226,15 @@ body.select-duty-mode-active .duty-selectable:hover {
   box-shadow: inset 0 0 0 2px #3366cc;
 }
 
+/* 當該員工選班已滿額時，該員工未選的格子（目前顯示為休的格子）滑鼠顯示為禁止 */
+body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selected-active) {
+  cursor: not-allowed !important;
+}
+body.select-duty-mode-active .duty-selectable.duty-limit-reached:not(.duty-selected-active):hover {
+  background-color: #f1f5f9 !important;
+  box-shadow: inset 0 0 0 2px #ef4444;
+}
+
 .duty-stats-card {
   margin-top: 24px;
   background: #ffffff;
@@ -236,10 +245,6 @@ body.select-duty-mode-active .duty-selectable:hover {
   max-width: 480px;
   margin-left: auto;
   display: none;
-}
-
-body.select-duty-mode-active .duty-stats-card {
-  display: block;
   animation: slideUp 0.3s ease-out;
 }
 
@@ -592,12 +597,22 @@ body.select-duty-mode-active .duty-stats-card {
 
 																																	            if (employee.name !== "王宏榮" && (isSaturday || isNational)) {
 																																			              scheduleCell.classList.add("duty-selectable");
+																																			              scheduleCell.setAttribute("data-employee-id", employee.id);
+																																			              scheduleCell.setAttribute("data-day", day);
 																																			              scheduleCell.addEventListener("click", () => {
 																																					                if (!selectDutyModeEnabled) return;
 																																					                const dateKey = formatDateKey(year, month, day);
 																																					                const selKey = `${employee.id}-${dateKey}`;
+																																					                const isSelected = !!userDutySelections[selKey];
+																																					                
+																																					                // 若尚未選取且已滿額，則拒絕點擊
+																																					                if (!isSelected && scheduleCell.classList.contains("duty-limit-reached")) {
+																																							                  return;
+																																							                }
+																																					                
 																																					                userDutySelections[selKey] = !userDutySelections[selKey];
 																																					                scheduleCell.textContent = userDutySelections[selKey] ? "" : "休";
+																																					                updateSelectableCellsState();
 																																					                updateRightPanel();
 																																					              });
 																																			            }
@@ -680,6 +695,7 @@ body.select-duty-mode-active .duty-stats-card {
 																																	        }
 
 																														            scheduleRulesFooter.style.display = "block";
+																														            updateSelectableCellsState();
 																														            updateRightPanel();
 																														          }
 
@@ -706,6 +722,62 @@ body.select-duty-mode-active .duty-stats-card {
 																																          let currentDutySeq = ["鍾靜怡", "許芷嘉", "黃柏瑜", "彭盛寬"];
 																																          let nextDutySeq = [];
 
+																																          function updateSelectableCellsState() {
+																																		            const year = Number(yearInput.value);
+																																		            const month = Number(monthInput.value);
+																																		            const isValidYear = Number.isInteger(year) && year >= 2026;
+																																		            const isValidMonth = Number.isInteger(month) && month >= 1 && month <= 12;
+																																		            if (!isValidYear || !isValidMonth) return;
+
+																																		            const { total } = getDutyDaysInMonth(year, month);
+																																		            const base = Math.floor(total / 4);
+																																		            const remainder = total % 4;
+
+																																		            const assigned = {};
+																																		            currentDutySeq.forEach((name, idx) => {
+																																				              assigned[name] = base + (idx < remainder ? 1 : 0);
+																																				            });
+
+																																		            employees.forEach(emp => {
+																																				              if (emp.name === "王宏榮") return;
+																																				              const limit = assigned[emp.name] || 0;
+																																				              const daysInMonth = getDaysInMonth(year, month);
+
+																																				              let selectedCount = 0;
+																																				              for (let day = 1; day <= daysInMonth; day++) {
+																																						                const weekday = new Date(year, month - 1, day).getDay();
+																																						                const isNational = isNationalHoliday(year, month, day);
+																																						                if (weekday === 6 || isNational) {
+																																								                  const dateKey = formatDateKey(year, month, day);
+																																								                  const selKey = `${emp.id}-${dateKey}`;
+																																								                  if (userDutySelections[selKey]) {
+																																										                    selectedCount++;
+																																										                  }
+																																								                }
+																																						              }
+
+																																				              const cells = document.querySelectorAll(`td[data-employee-id="${emp.id}"]`);
+																																				              cells.forEach(cell => {
+																																						                const day = Number(cell.getAttribute("data-day"));
+																																						                const dateKey = formatDateKey(year, month, day);
+																																						                const selKey = `${emp.id}-${dateKey}`;
+																																						                const isSelected = !!userDutySelections[selKey];
+
+																																						                if (isSelected) {
+																																								                  cell.classList.add("duty-selected-active");
+																																								                } else {
+																																										                  cell.classList.remove("duty-selected-active");
+																																										                }
+
+																																						                if (selectedCount >= limit) {
+																																								                  cell.classList.add("duty-limit-reached");
+																																								                } else {
+																																										                  cell.classList.remove("duty-limit-reached");
+																																										                }
+																																						              });
+																																				            });
+																																		          }
+
 																																          function updateRightPanel() {
 																																		            const year = Number(yearInput.value);
 																																		            const month = Number(monthInput.value);
@@ -713,7 +785,7 @@ body.select-duty-mode-active .duty-stats-card {
 																																		            const isValidMonth = Number.isInteger(month) && month >= 1 && month <= 12;
 																																		            const card = document.getElementById("dutyStatsCard");
 																																		            if (!card) return;
-																																		            if (!selectDutyModeEnabled || !isValidYear || !isValidMonth) {
+																																		            if (!isValidYear || !isValidMonth) {
 																																				              card.style.display = "none";
 																																				              return;
 																																				            }
