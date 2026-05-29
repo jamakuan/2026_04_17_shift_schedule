@@ -146,16 +146,16 @@
 											      background: #ffffff;
 											          }
 
-									    .holiday-footer {
-										          margin-top: 12px;
+									        .holiday-footer {
+										          margin-top: 0;
 											        padding: 10px 12px;
 												      border-left: 4px solid #f59e0b;
-												            background: #fff7ed;
-													          font-size: 14px;
-														        line-height: 1.6;
-															      font-weight: bold;
-															            display: none;
-																        }
+												      background: #fff7ed;
+													  font-size: 14px;
+													  line-height: 1.6;
+													  font-weight: bold;
+													  display: none;
+													}
 
 									        .schedule-rules-footer {
 											      margin-top: 8px;
@@ -391,9 +391,15 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
   min-width: 320px;
 }
 
-.schedule-rules-footer.header-rules {
+.rules-and-holidays-panel {
   flex: 1.2;
   min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-rules-footer.header-rules {
   margin-top: 0;
 }
 
@@ -444,14 +450,17 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 			          </div>
 			        </div>
 
-			        <div id="scheduleRulesFooter" class="schedule-rules-footer header-rules">
-			          <div class="schedule-rules-footer-title">排班方式：</div>
-			          <ol>
-			            <li>如有需要調整，請與其他排班人員協調，協調完畢再通知經理進行更新</li>
-			            <li>平日上班限制1人，國定假日視情況而定</li>
-			            <li>每兩週需排定2天例假，每四週例假+休息日至少8天，不得連續工作超過12日</li>
-			            <li>假日值班（週六及國定假日）限制1人值班，後續順序人員不可重複選擇已有人值班的假日。</li>
-			          </ol>
+			        <div class="rules-and-holidays-panel">
+			          <div id="holidayFooter" class="holiday-footer"></div>
+			          <div id="scheduleRulesFooter" class="schedule-rules-footer header-rules">
+			            <div class="schedule-rules-footer-title">排班方式：</div>
+			            <ol>
+			              <li>如有需要調整，請與其他排班人員協調，協調完畢再通知經理進行更新</li>
+			              <li>平日上班限制1人，國定假日視情況而定</li>
+			              <li>每兩週需排定2天例假，每四週例假+休息日至少8天，不得連續工作超過12日</li>
+			              <li>假日值班（週六及國定假日）限制1人值班，後續順序人員不可重複選擇已有人值班的假日。</li>
+			            </ol>
+			          </div>
 			        </div>
 			      </div>
 
@@ -461,7 +470,6 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 			        <table>
 			          <tbody id="scheduleTableBody"></tbody>
 			        </table>
-			        <div id="holidayFooter" class="holiday-footer"></div>
 			        <div id="dutyStatsCard" class="duty-stats-card"></div>
 																									          </div>
 																										    </div>
@@ -791,9 +799,11 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																														            if (holidayToggle.checked && holidayNotes.length > 0) {
 																																            holidayFooter.textContent = `國定假日：${holidayNotes.join("、")}`;
 																																            holidayFooter.style.display = "block";
+																																            holidayFooter.style.visibility = "visible";
 																															          } else {
-																																	          holidayFooter.textContent = "";
-																																	          holidayFooter.style.display = "none";
+																																	          holidayFooter.textContent = "國定假日：無";
+																																	          holidayFooter.style.display = "block";
+																																	          holidayFooter.style.visibility = "hidden";
 																																	        }
 
 																														            scheduleRulesFooter.style.display = "block";
