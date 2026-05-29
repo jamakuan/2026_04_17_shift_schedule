@@ -703,11 +703,23 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																							                  assigned[name] = base + (idx < remainder ? 1 : 0);
 																																							                });
 																																					                
-																																					                // 檢查是否輪到該人員。如果未輪到他，則拒絕點擊
 																																					                const currentSelectorName = getCurrentSelectorName(year, month, assigned);
-																																					                if (employee.name !== currentSelectorName) {
-																																							                  return;
-																																							                }
+																																					                
+																																					                // 特休模式點選平日：不綁順序，但必須完成自己當月的值班與補休選班
+																																					                const isSpecialLeaveClick = specialLeaveModeEnabled && !isHoliday;
+																																					                if (isSpecialLeaveClick) {
+																																					                  const { duty, comp } = getEmployeeSelections(employee.id, year, month);
+																																					                  const req = assigned[employee.name] || 0;
+																																					                  if (duty < req || comp < req) {
+																																					                    alert(`⚠️ ${employee.name} 您尚未完成當月選班！\n已選值班：${duty} / ${req} 天\n已選補休：${comp} / ${req} 天\n請完成選班後再選擇特休。`);
+																																					                    return;
+																																					                  }
+																																					                } else {
+																																					                  // 假日值班、或一般模式下的選班：必須是當前輪到的人
+																																					                  if (employee.name !== currentSelectorName) {
+																																					                    return;
+																																					                  }
+																																					                }
 																																					                
 																																					                const dateKey = formatDateKey(year, month, day);
 																																					                const selKey = `${employee.id}-${dateKey}`;
@@ -949,7 +961,17 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																																										                  cell.classList.remove("duty-selected-active");
 																																										                }
 
-																																						                if (!isCurrent) {
+																																						                let showNotTurn = !isCurrent;
+																																						                if (specialLeaveModeEnabled && !isHoliday) {
+																																						                  const { duty: empDuty, comp: empComp } = getEmployeeSelections(emp.id, year, month);
+																																						                  if (empDuty >= limit && empComp >= limit) {
+																																						                    showNotTurn = false;
+																																						                  } else {
+																																						                    showNotTurn = true;
+																																						                  }
+																																						                }
+
+																																						                if (showNotTurn) {
 																																								                  cell.classList.add("duty-not-turn");
 																																								                  cell.classList.remove("duty-limit-reached");
 																																								                } else {
@@ -1234,26 +1256,7 @@ body.select-duty-mode-active .duty-selectable.duty-not-turn:hover {
 																												      specialLeaveButton.addEventListener("click", () => {
 																														            const year = Number(yearInput.value);
 																														            const month = Number(monthInput.value);
-																														            const { total } = getDutyDaysInMonth(year, month);
-																														            const base = Math.floor(total / 4);
-																														            const remainder = total % 4;
-																														            const assigned = {};
-																														            currentDutySeq.forEach((name, idx) => {
-																														              assigned[name] = base + (idx < remainder ? 1 : 0);
-																														            });
-																														            
-																														            const currentSelectorName = getCurrentSelectorName(year, month, assigned);
-																														            if (currentSelectorName) {
-																														              const emp = employees.find(e => e.name === currentSelectorName);
-																														              const { duty, comp } = getEmployeeSelections(emp.id, year, month);
-																														              const req = assigned[currentSelectorName];
-																														              if (duty < req || comp < req) {
-																														                alert(`⚠️ 您尚未完成當月選班！\n當前輪到選班人員：${currentSelectorName}\n已選值班：${duty} / ${req} 天\n已選補休：${comp} / ${req} 天\n請先完成選班再使用特休按鈕。`);
-																														                return;
-																														              }
-																														            } else {
-																														              if (!year || !month) return;
-																														            }
+																														            if (!year || !month) return;
 
 																														            specialLeaveModeEnabled = !specialLeaveModeEnabled;
 																														            specialLeaveButton.classList.toggle("active", specialLeaveModeEnabled);
